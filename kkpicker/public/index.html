@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>KKPicker</title>
+    <!-- Vue Js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb"
+        crossorigin="anonymous">
+    <link rel="stylesheet" href="main.css">
+    <!-- Firebase Scripts-->
+    <script defer src="/__/firebase/4.6.2/firebase-app.js"></script>
+    <script defer src="/__/firebase/4.6.2/firebase-auth.js"></script>
+    <!-- <script defer src="/__/firebase/4.6.2/firebase-database.js"></script> -->
+    <script defer src="/__/firebase/4.6.2/firebase-firestore.js"></script>
+    <script defer src="/__/firebase/init.js"></script>
+    <!--Auth UI -->
+    <script src="https://cdn.firebase.com/libs/firebaseui/2.4.1/firebaseui.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.firebase.com/libs/firebaseui/2.4.1/firebaseui.css" />
+    <!-- Google Icon Fonts -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body>
+
+    <div id="app">
+        <nav class="navbar navbar-expand-md navbar-dark bg-dark">
+            <span class="mr-auto my-2">
+                <a class="navbar-brand" href="#">KKPICKER</a>
+            </span>
+            <!-- Logged ON Nav -->
+            <template v-if="loggedIn">
+                <span class="row mx-4">
+                    <ul class="navbar-nav my-2 my-lg-0">
+                        <li class="nav-item">
+                            <a id="profile" class="nav-link" data-toggle="modal" data-target="#profileModal" href="#">Profile</a>
+                        </li>
+                        <li class="nav-item">
+                            <a v-on:click="signOut" id="logout" class="nav-link" href="#">Logout</a>
+                        </li>
+                    </ul>
+                </span>
+            </template>
+            <!-- Logged OFF Nav -->
+            <template v-else>
+                <span class="row mx-4">
+                    <ul class="navbar-nav my-2 my-lg-0">
+                        <li class="nav-item">
+                            <!-- <a id="login" data-toggle="modal" data-target="#SignInModal" class="nav-link">Sign In</a> -->
+                            <a class="nav-link" id="login" v-on:click="openSignIn">Sign In</a>
+                        </li>
+                    </ul>
+                </span>
+            </template>
+        </nav>
+        <div class="container">
+
+            <template v-if="loggedIn">
+                <div class="row justify-content-center my-4 loggedOn">
+                    <div class="card" style="width: 70rem;">
+                        <div class="card-body">
+                            <h4 class="card-title">Kringle Groups</h4>
+                            <p class="card-text">
+                                <ul class="list-group">
+                                    <li v-for="(group, grpIndex) in groups" class="list-group-item " v-bind:class="{active: group.Administrator == user.uid}">
+                                        <div class="row align-items-center">
+                                            <span class="col">{{group.Name}}</span>
+                                            <span class="col border-top-0">
+                                                <div class="row align-items-center justify-content-end">
+                                                    <span class="m-1">{{groupIds[grpIndex]}}</span>
+                                                    <button v-if="group.Administrator == user.uid" type="button" class="btn btn-secondary m-1" v-on:click="viewGroup(grpIndex)">Edit</button>
+                                                    <button v-else type="button" class="btn btn-secondary m-1" v-on:click="viewGroup(grpIndex)">View</button>
+                                                </div>
+                                            </span>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div id="addBtnArea">
+                </div>
+                <button id="addBtn" class="material-icons" data-toggle="modal" data-target="#addModal">add</button>
+            </template>
+
+            <template v-else>
+                <div class="row justify-content-center my-4 loggedOff">
+                    Please Sign In to Use this App
+                </div>
+            </template>
+        </div>
+
+
+
+        <!--Edit Modal -->
+        <div class="modal fade" id="EditModal" tabindex="-1" role="dialog" aria-labelledby="EditModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <template v-if="groupSel>=0">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="EditModalLabel">Edit {{editBody.selectedGroup.Name}}</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body ">
+                            {{editBody.selectedGroup.Name}}
+                            <br>
+                            <ul>
+                                <li v-for="member in editBody.namelist">
+                                    {{member}}
+                                </li>
+                            </ul>
+                            <form>
+                                <label for="editEmailLbl">Add Group Member</label>
+                                <input v-model="newMemberEmail" type="email" class="form-control" id="profileName" aria-describedby="emailHelp" placeholder="Member's Email Address">
+                                <button type="button" v-on:click="addMember(editBody.groupID)">Add</button>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Group Modal -->
+        <div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="addModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addModalLabel">New Group</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <form>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="groupNamelbl">Group Name</label>
+                                <input v-model="newGroup.name" type="text" class="form-control" id="groupName" aria-describedby="emailHelp" placeholder="Name your Group">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" v-on:click="createGroup">Save</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Modal-->
+        <div class="modal fade" id="profileModal" tabindex="-1" role="dialog" aria-labelledby="profileModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addModalLabel">Profile</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <form>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="formNamelbl">Profile Name:</label>
+                                <input v-model="profile.name" type="text" class="form-control" id="profileName" aria-describedby="emailHelp" placeholder="Your Name">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" v-on:click="saveProfile">Save</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sign In Modal -->
+    <div class="modal fade" id="SignInModal" tabindex="-1" role="dialog" aria-labelledby="SignInModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="SignInModalLabel">Sign In</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body ">
+                    <div id="firebaseui-auth-container"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</body>
+<!-- Bootstrap JavaScript Dependancies -->
+
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js " integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN "
+    crossorigin="anonymous "></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js " integrity="sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh "
+    crossorigin="anonymous "></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js " integrity="sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ "
+    crossorigin="anonymous "></script>
+<script src="app.js" type="text/javascript"></script>
+
+</html>
