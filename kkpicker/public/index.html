@@ -58,7 +58,6 @@
             </template>
         </nav>
         <div class="container">
-
             <template v-if="loggedIn">
                 <div class="row justify-content-center my-4 loggedOn">
                     <div class="card" style="width: 70rem;">
@@ -66,15 +65,42 @@
                             <h4 class="card-title">Kringle Groups</h4>
                             <p class="card-text">
                                 <ul class="list-group">
-                                    <li v-for="(group, grpIndex) in groups" class="list-group-item " v-bind:class="{active: group.Administrator == user.uid}">
+                                    <li v-for="(group, grpIndex) in groups" class="list-group-item " v-bind:class="{active: group.data.Administrator == user.uid}">
                                         <div class="row align-items-center">
-                                            <span class="col">{{group.Name}}</span>
+                                            <span class="col">{{group.data.Name}}</span>
                                             <span class="col border-top-0">
                                                 <div class="row align-items-center justify-content-end">
-                                                    <span class="m-1">{{groupIds[grpIndex]}}</span>
-                                                    <button v-if="group.Administrator == user.uid" type="button" class="btn btn-secondary m-1" v-on:click="viewGroup(grpIndex)">Edit</button>
-                                                    <button v-else type="button" class="btn btn-secondary m-1" v-on:click="viewGroup(grpIndex)">View</button>
+                                                    <!-- <span class="m-1">{{groupIds[grpIndex]}}</span> -->
+                                                    <button v-if="group.data.Administrator == user.uid" type="button" class="btn btn-secondary m-1" v-on:click="group.grpshow = !group.grpshow">Edit</button>
+                                                    <button v-else type="button" class="btn btn-secondary m-1" v-on:click="group.grpshow = !group.grpshow">View</button>
                                                 </div>
+                                            </span>
+                                        </div>
+                                        <div class="row align-items-center">
+                                            <span class="col">
+                                                <transition name="fade">
+                                                    <template v-if="group.grpshow">
+                                                        <div>
+                                                            Members
+                                                            <ul>
+                                                                <li v-for="member in group.members">
+                                                                    {{member}} [DEL MEMBER BTN]
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                    </template>
+                                                </transition>
+                                                <transition name="fade">
+                                                    <template v-if="group.grpshow">
+                                                        <template v-if="group.data.Administrator == user.uid">
+                                                            <form>
+                                                                <label>Add Group Member</label>
+                                                                <input v-model="newMemberEmail" type="email" class="form-control" id="profileName" aria-describedby="emailHelp" placeholder="Member's Email Address">
+                                                                <button type="button" v-on:click="addMember(groupIds[grpIndex])">Add</button>
+                                                            </form>
+                                                        </template>
+                                                    </template>
+                                                </transition>
                                             </span>
                                         </div>
                                     </li>
@@ -94,22 +120,20 @@
                 </div>
             </template>
         </div>
-
-
-
         <!--Edit Modal -->
+        <!-- To be deleted!!!-->
         <div class="modal fade" id="EditModal" tabindex="-1" role="dialog" aria-labelledby="EditModalLabel" aria-hidden="true">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <template v-if="groupSel>=0">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="EditModalLabel">Edit {{editBody.selectedGroup.Name}}</h5>
+                            <h5 class="modal-title" id="EditModalLabel">Edit {{editBody.selectedGroup.data.Name}}</h5>
                             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                 <span aria-hidden="true">&times;</span>
                             </button>
                         </div>
                         <div class="modal-body ">
-                            {{editBody.selectedGroup.Name}}
+                            {{editBody.selectedGroup.data.Name}}
                             <br>
                             <ul>
                                 <li v-for="member in editBody.namelist">

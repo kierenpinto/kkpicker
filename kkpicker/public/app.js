@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function () {
     groups = [];
     groupIds = [];
     editBody = null;
+    grpshow = [];
 
     // ----------------- Authentication State
     var authState = function () {
@@ -29,7 +30,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 profile: {
                     name: null
                 },
-                newMemberEmail: null
+                newMemberEmail: null,
+                grpshow : grpshow,
+                groupIds: groupIds
             }
             appInstance = new Vue({
                 el: '#app',
@@ -109,31 +112,38 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     // View Groups List
     var populateGroups = function (user) {
+        var members = function(doc){
+            var namelist = []
+            for (member in doc.data().Members){
+                var mems = db.collection("users").doc(doc.data().Members[member]).get().then(function(doc){
+                    if (doc.data().name) {
+                        namelist.push(doc.data().name);
+                    }
+                    else {
+                        namelist.push("un-named user: " + doc.data().userid);
+                    }
+                }) 
+            }
+            return namelist;  
+        }
         //View Groups
         var querygroups = function (doc) {
-            console.log(doc.id)
             db.collection("Group").doc(doc.id).get()
                 .then(function (doc) {
                     if (doc.exists) {
-                        groups.push(doc.data());
+                        groups.push({data:doc.data(),grpshow:false,members:members(doc)});
                         groupIds.push(doc.id);
                     }
                     else {
-                        //create new
+                        //throw an exception
                     }
                 }).catch(function (error) { console.log("Error getting documents: ", error); })
-        }/*
+        }
+
         var viewGroupRef = db.collection("users").doc(user.uid).collection("groups").get()
             .then(function (querySnapshot) {
                 querySnapshot.forEach(function (doc) { querygroups(doc) })
-            }) */
-        var changeGroupRef = db.collection("users").doc(user.uid).collection("groups").onSnapshot(function (querySnapshot) {
-            querySnapshot.docChanges.forEach(function (change) {
-                if (change.type === "added") {
-                    querygroups(change.doc);
-                }
             })
-        })
     }
     // View Group Details --> Call after logged in
     var viewGroup = function (index) {
@@ -142,8 +152,8 @@ document.addEventListener('DOMContentLoaded', function () {
             var selectedGroup = groups[index];
             var groupID = groupIds[index];
             var namelist = [];
-            for (member in selectedGroup.Members) {
-                db.collection("users").doc(selectedGroup.Members[member]).onSnapshot(function (doc) {
+            for (member in selectedGroup.data.Members) {
+                db.collection("users").doc(selectedGroup.data.Members[member]).onSnapshot(function (doc) {
                     var name = doc.data().name;
                     if (name) {
                         namelist.push(name);
@@ -153,7 +163,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 })
             }
-            this.editBody = { selectedGroup, namelist, groupID: groupIds[index] };
+            this.editBody = { selectedGroup, namelist:namelist, groupID: groupIds[index] };
             this.groupSel = index;
             $('#EditModal').modal('show');
             return;
