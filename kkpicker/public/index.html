@@ -120,40 +120,7 @@
                 </div>
             </template>
         </div>
-        <!--Edit Modal -->
-        <!-- To be deleted!!!-->
-        <div class="modal fade" id="EditModal" tabindex="-1" role="dialog" aria-labelledby="EditModalLabel" aria-hidden="true">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <template v-if="groupSel>=0">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="EditModalLabel">Edit {{editBody.selectedGroup.data.Name}}</h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body ">
-                            {{editBody.selectedGroup.data.Name}}
-                            <br>
-                            <ul>
-                                <li v-for="member in editBody.namelist">
-                                    {{member}}
-                                </li>
-                            </ul>
-                            <form>
-                                <label for="editEmailLbl">Add Group Member</label>
-                                <input v-model="newMemberEmail" type="email" class="form-control" id="profileName" aria-describedby="emailHelp" placeholder="Member's Email Address">
-                                <button type="button" v-on:click="addMember(editBody.groupID)">Add</button>
-                            </form>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                        </div>
-                    </template>
-                </div>
-            </div>
-        </div>
-
+        
         <!-- Add Group Modal -->
         <div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="addModalLabel" aria-hidden="true">
             <div class="modal-dialog" role="document">
