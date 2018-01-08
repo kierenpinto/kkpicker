@@ -84,7 +84,7 @@
                                                             Members
                                                             <ul>
                                                                 <li v-for="member in group.members">
-                                                                    {{member}} [DEL MEMBER BTN]
+                                                                    {{member.name}} <button type="button" v-on:click="delMember(groupIds[grpIndex],member.id)">Delete</button>
                                                                 </li>
                                                             </ul>
                                                         </div>

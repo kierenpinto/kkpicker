@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
         firebase.auth().signOut().then(function () { location.reload(true) }).catch(function () { console.error('logout failed') });
     }
     //Firestore: 
-    var db = firebase.firestore();
+    db = firebase.firestore();
     currUser = firebase.auth().currentUser;
     groups = [];
     groupIds = [];
@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     name: null
                 },
                 newMemberEmail: null,
-                grpshow : grpshow,
+                grpshow: grpshow,
                 groupIds: groupIds
             }
             appInstance = new Vue({
@@ -39,11 +39,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 data: dataBindings,
                 methods: {
                     signOut: signOut,
-                    viewGroup: viewGroup,
                     createGroup: createGroup,
                     saveProfile: saveProfile,
                     addMember: addMember,
-                    openSignIn:openSignIn
+                    openSignIn: openSignIn,
+                    delMember: delMember
                 }
             })
 
@@ -112,32 +112,48 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     // View Groups List
     var populateGroups = function (user) {
-        var members = function(doc){
-            var namelist = []
-            for (member in doc.data().Members){
-                var mems = db.collection("users").doc(doc.data().Members[member]).get().then(function(doc){
-                    if (doc.data().name) {
-                        namelist.push(doc.data().name);
+        var members = function (doc, loc, assign) {
+            var namelist = [];
+            loc.collection('Members').get().then(function (querySnapshot) {
+                querySnapshot.forEach(function (doc) {
+                    var data = {}
+                    if (assign) {
+                        db.collection('users').doc(doc.data().partner_uid).get().then(function (doc) {
+                            data.pid = doc.data().userid;
+                            if (doc.data().name) {
+                                data.pname = doc.data().name;
+                            }
+                            else {
+                                data.pname = "un-named user: " + doc.data().userid;
+                            }
+                        });
                     }
-                    else {
-                        namelist.push("un-named user: " + doc.data().userid);
-                    }
-                }) 
-            }
-            return namelist;  
+                    db.collection("users").doc(doc.data().uid).get().then(function (doc) {
+                        data.id = doc.id;
+                        if (doc.data().name) {
+                            data.name = doc.data().name;
+                        }
+                        else {
+                            data.name = "un-named user: " + doc.data().userid;
+                        }
+                    })
+                    namelist.push(data)
+                })
+            })
+            return namelist;
         }
         //View Groups
         var querygroups = function (doc) {
-            db.collection("Group").doc(doc.id).get()
-                .then(function (doc) {
-                    if (doc.exists) {
-                        groups.push({data:doc.data(),grpshow:false,members:members(doc)});
-                        groupIds.push(doc.id);
-                    }
-                    else {
-                        //throw an exception
-                    }
-                }).catch(function (error) { console.log("Error getting documents: ", error); })
+            var loc = db.collection("Group").doc(doc.id);
+            loc.get().then(function (doc) {
+                if (doc.exists) {
+                    groups.push({ data: doc.data(), grpshow: false, members: members(doc, loc, doc.data().assign) });
+                    groupIds.push(doc.id);
+                }
+                else {
+                    //throw an exception
+                }
+            }).catch(function (error) { console.log("Error getting documents: ", error); })
         }
 
         var viewGroupRef = db.collection("users").doc(user.uid).collection("groups").get()
@@ -145,43 +161,26 @@ document.addEventListener('DOMContentLoaded', function () {
                 querySnapshot.forEach(function (doc) { querygroups(doc) })
             })
     }
-    // View Group Details --> Call after logged in
-    var viewGroup = function (index) {
-        var max_index = groups.length - 1;
-        if (index <= max_index) {
-            var selectedGroup = groups[index];
-            var groupID = groupIds[index];
-            var namelist = [];
-            for (member in selectedGroup.data.Members) {
-                db.collection("users").doc(selectedGroup.data.Members[member]).onSnapshot(function (doc) {
-                    var name = doc.data().name;
-                    if (name) {
-                        namelist.push(name);
-                    }
-                    else {
-                        namelist.push("un-named user: " + doc.data().userid);
-                    }
-                })
-            }
-            this.editBody = { selectedGroup, namelist:namelist, groupID: groupIds[index] };
-            this.groupSel = index;
-            $('#EditModal').modal('show');
-            return;
-        }
-    }
+
     //Create Groups--> Call after logged in
     function createGroup() {
         let formParams = this.newGroup;
         //Stuff to Create Groups
-        var addGroupRef = db.collection("Group").doc();
-        addGroupRef.set({
+        var addGroupRef = db.collection("Group");
+        var userid = this.user.uid
+        addGroupRef.add({
             Name: formParams.name,
             Administrator: this.user.uid,
-            Members: [this.user.uid],
-        }).then(function (doc) {
-            $('#addModal').modal('hide');
+            //Members: [this.user.uid],
+        }).then(function (docRef) {
+            var batch = db.batch();
+            batch.set(db.collection("Group").doc(docRef.id).collection("Members").doc(userid), { "uid": userid });
+            batch.set(db.collection("Group").doc(docRef.id).collection("Administrators").doc(userid), { "uid": userid });
+            batch.commit().then(function () {
+                //Group Created Message / Action ....
+                $('#addModal').modal('hide');
+            })
         })
-
     }
 
     function saveProfile() {
@@ -200,10 +199,20 @@ document.addEventListener('DOMContentLoaded', function () {
         })
     }
 
+    function delMember(groupID, memberID) {
+        console.log("deleted", memberID, "from", groupID);
+        db.collection("Group").doc(groupID).collection('Members').doc(memberID).update({
+            'deleted': true
+        }).then(function (doc) {
+            //Refresh Group or Page
+        })
+    }
     function openSignIn() {
         $('#SignInModal').modal('show');
     }
+
     //
     //JS LOAD COMPLETE
     document.getElementById("app").style.visibility = "visible";
+
 });
