@@ -43,7 +43,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     saveProfile: saveProfile,
                     addMember: addMember,
                     openSignIn: openSignIn,
-                    delMember: delMember
+                    delMember: delMember,
+                    match: match,
+                    unmatch: unmatch
+                },
+                components: {
+                    'loader':{
+                        template: '<div class="loader"></div>'
+                    }
                 }
             })
 
@@ -210,7 +217,13 @@ document.addEventListener('DOMContentLoaded', function () {
     function openSignIn() {
         $('#SignInModal').modal('show');
     }
+function match(groupID){
+db.collection("Group").doc(groupID).update({assign: true})
+}
 
+function unmatch(groupID){
+    db.collection("Group").doc(groupID).update({assign: false})
+    }
     //
     //JS LOAD COMPLETE
     document.getElementById("app").style.visibility = "visible";

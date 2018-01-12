@@ -6,11 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>KKPicker</title>
-    <!-- Vue Js -->
-    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <!-- Vue Js 
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script> -->
+    <script src="vue.js"></script>
     <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb"
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css" integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy"
         crossorigin="anonymous">
+
     <link rel="stylesheet" href="main.css">
     <!-- Firebase Scripts-->
     <script defer src="/__/firebase/4.6.2/firebase-app.js"></script>
@@ -50,7 +52,6 @@
                 <span class="row mx-4">
                     <ul class="navbar-nav my-2 my-lg-0">
                         <li class="nav-item">
-                            <!-- <a id="login" data-toggle="modal" data-target="#SignInModal" class="nav-link">Sign In</a> -->
                             <a class="nav-link" id="login" v-on:click="openSignIn">Sign In</a>
                         </li>
                     </ul>
@@ -60,54 +61,99 @@
         <div class="container">
             <template v-if="loggedIn">
                 <div class="row justify-content-center my-4 loggedOn">
-                    <div class="card" style="width: 70rem;">
-                        <div class="card-body">
-                            <h4 class="card-title">Kringle Groups</h4>
-                            <p class="card-text">
-                                <ul class="list-group">
-                                    <li v-for="(group, grpIndex) in groups" class="list-group-item " v-bind:class="{active: group.data.Administrator == user.uid}">
-                                        <div class="row align-items-center">
-                                            <span class="col">{{group.data.Name}}</span>
-                                            <span class="col border-top-0">
-                                                <div class="row align-items-center justify-content-end">
-                                                    <!-- <span class="m-1">{{groupIds[grpIndex]}}</span> -->
-                                                    <button v-if="group.data.Administrator == user.uid" type="button" class="btn btn-secondary m-1" v-on:click="group.grpshow = !group.grpshow">Edit</button>
-                                                    <button v-else type="button" class="btn btn-secondary m-1" v-on:click="group.grpshow = !group.grpshow">View</button>
-                                                </div>
-                                            </span>
+                    <template v-for="(group, grpIndex) in groups">
+                        <div class="card" style="width: 70rem; margin:10px">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <span class="col">
+                                        <h4 v-on:click="group.grpshow = !group.grpshow" class="card-title accordion">{{group.data.Name}}
+                                        </h4>
+                                    </span>
+                                    <span class="col mr-auto">
+                                        <div class="row justify-content-end pr-2">
+                                            <i class="material-icons">arrow_drop_up</i>
                                         </div>
-                                        <div class="row align-items-center">
-                                            <span class="col">
-                                                <transition name="fade">
-                                                    <template v-if="group.grpshow">
-                                                        <div>
-                                                            Members
-                                                            <ul>
-                                                                <li v-for="member in group.members">
-                                                                    {{member.name}} <button type="button" v-on:click="delMember(groupIds[grpIndex],member.id)">Delete</button>
-                                                                </li>
-                                                            </ul>
-                                                        </div>
-                                                    </template>
-                                                </transition>
-                                                <transition name="fade">
-                                                    <template v-if="group.grpshow">
-                                                        <template v-if="group.data.Administrator == user.uid">
-                                                            <form>
-                                                                <label>Add Group Member</label>
-                                                                <input v-model="newMemberEmail" type="email" class="form-control" id="profileName" aria-describedby="emailHelp" placeholder="Member's Email Address">
-                                                                <button type="button" v-on:click="addMember(groupIds[grpIndex])">Add</button>
-                                                            </form>
-                                                        </template>
-                                                    </template>
-                                                </transition>
-                                            </span>
+                                        <div class="row justify-content-end pr-2">
+                                            <i class="material-icons">arrow_drop_down</i>
                                         </div>
-                                    </li>
-                                </ul>
-                            </p>
+                                    </span>
+                                </div>
+                                <transition name="fade">
+                                    <div v-if="group.grpshow">
+                                        <p class="card-text">
+                                            <div class="row align-items-center">
+                                                <span class="col">
+
+                                                    <h5 class="card-subtitle text-center pb-2">Members</h5>
+                                                    <ul class="list-group">
+                                                        <li class="list-group-item bg-secondary">
+                                                                <div class="row align-items-center">
+                                                                        <span class="col">
+                                                                            Name
+                                                                        </span>
+                                                                        <span v-if="group.data.assign == true" class="col">
+                                                                            Partner
+                                                                        </span>
+                                                                        <span class="col"></span>
+                                                                    </div>
+                                                        </li>
+                                                        <li v-for="member in group.members" class="list-group-item ">
+                                                            <div class="row align-items-center">
+                                                                <span class="col">
+                                                                    {{member.name}}
+                                                                </span>
+                                                                <span v-if="group.data.assign == true"class="col">
+                                                                    {{member.pname}}
+                                                                </span>
+                                                                <span class="col">
+                                                                    <div class="row justify-content-end">
+                                                                        <button v-if="group.data.Administrator == user.uid" class="btn btn-danger" type="button" v-on:click="delMember(groupIds[grpIndex],member.id)">Delete</button>
+                                                                    </div>
+                                                                </span>
+                                                            </div>
+                                                        </li>
+                                                    </ul>
+
+                                                    <template v-if="group.data.Administrator == user.uid">
+
+                                                        <form>
+                                                            <div class="form-group">
+                                                                <h5 class="text-center m-2">Administrator Options:</h5>
+                                                                <div class="input-group m-2">
+                                                                    <div class="input-group-prepend">
+                                                                        <span class="input-group-text" id="basic-addon1">Add Group Member</span>
+                                                                    </div>
+                                                                    <input v-model="newMemberEmail" type="email" class="form-control" id="profileName" aria-describedby="emailHelp" placeholder="Member's Email Address">
+                                                                    <div class="input-group-append">
+                                                                        <button type="button" class="input-group-text btn btn-success" v-on:click="addMember(groupIds[grpIndex])">Add</button>
+                                                                        <loader></loader>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="input-group m-2">
+                                                                        <div class="input-group-prepend">
+                                                                            <span class="input-group-text" id="basic-addon1">Match Kris Kringles</span>
+                                                                        </div>
+                                                                        <button type="button" class="input-group-text btn btn-success" v-on:click="match(groupIds[grpIndex])">Match</button>
+                                                                        <button type="button" class="input-group-text btn btn-warning" >Un-Match</button>
+                                                                    </div>
+                                                                <div class="input-group m-2">
+                                                                    <div class="input-group-prepend">
+                                                                        <span class="input-group-text" id="basic-addon1">Delete Group</span>
+                                                                    </div>
+                                                                    <button type="button" class="input-group-text btn btn-danger" >Delete</button>
+                                                                </div>
+                                                            </div>
+                                                        </form>
+
+                                                    </template>
+                                                </span>
+                                            </div>
+                                        </p>
+                                    </div>
+                                </transition>
+                            </div>
                         </div>
-                    </div>
+                    </template>
                 </div>
                 <div id="addBtnArea">
                 </div>
@@ -120,7 +166,7 @@
                 </div>
             </template>
         </div>
-        
+
         <!-- Add Group Modal -->
         <div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="addModalLabel" aria-hidden="true">
             <div class="modal-dialog" role="document">
