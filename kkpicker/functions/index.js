@@ -10,58 +10,46 @@ var db = admin.firestore();
 //  response.send("Hello from Firebase!");
 // });
 
-/* *********** Create Group
-Sets up group in backend.  
-*/
-exports.createGroup = functions.firestore.document('Group/{groupID}').onCreate((event) => {
-    let groupID = event.params.groupID;
-    var dataref = db.collection('Group').doc(groupID).get().then(
-        function (doc) {
-            if (!doc.exists) {
-                console.warn('No such document!');
-            } else {
-                db.collection('Group').doc(groupID).collection('Members').get().then(function (querySnapshot) {
-                    querySnapshot.forEach(function (doc) {
-                        db.collection('users').doc(doc.id).collection("groups").doc(groupID).set({
-                            id: groupID
-                        });
-                    })
-                })
-                db.collection('Group').doc(groupID).update({ Processing: 'complete' })
-            }
-        }
-    ).catch(err => {
-        console.warn('Error getting document', err);
+
+//************************************************ Dependancy CODE
+function deleteCollection(db, collectionRef, batchSize) {
+
+    var query = collectionRef.orderBy('__name__').limit(batchSize);
+
+    return new Promise((resolve, reject) => {
+        deleteQueryBatch(db, query, batchSize, resolve, reject);
     });
+}
 
-    return true;
-})
-
-/* Unfinished
-exports.modifyUser = functions.firestore.document('users/{userID}/groups/{groupID}').onUpdate((event) => {
-    const user = event.data;
-    let uid = user.uid;
-    if (event.params.userId == uid) {
-        var data = {
-            name: 'Test Group',
-            state: 'CA',
-            country: 'USA'
-        };
-
-    }
-})
-*/
-/** Add group membership to user profile */
-var syncMembers = function (users, groupID) {
-    for (user in users) {
-        var checkDoc = db.collection('users').doc(users[user]).collection("groups").doc(groupID).get().then(function (doc) {
-            if (!doc.exists) {
-                var setDoc = db.collection('users').doc(users[user]).collection("groups").doc(groupID).set({
-                    id: groupID
-                });
+function deleteQueryBatch(db, query, batchSize, resolve, reject) {
+    query.get()
+        .then((snapshot) => {
+            // When there are no documents left, we are done
+            if (snapshot.size == 0) {
+                return 0;
             }
+
+            // Delete documents in a batch
+            var batch = db.batch();
+            snapshot.docs.forEach((doc) => {
+                batch.delete(doc.ref);
+            });
+
+            return batch.commit().then(() => {
+                return snapshot.size;
+            });
+        }).then((numDeleted) => {
+            if (numDeleted === 0) {
+                resolve();
+                return;
+            }
+            // Recurse on the next process tick, to avoid
+            // exploding the stack.
+            process.nextTick(() => {
+                deleteQueryBatch(db, query, batchSize, resolve, reject);
+            });
         })
-    }
+        .catch(reject);
 }
 assign = function (groupID) {
     db.collection('Group').doc(groupID).collection("Members").get().then(function (querySnapshot) {
@@ -74,7 +62,7 @@ assign = function (groupID) {
         list_copy = list.slice(0);
         var no = 0;
         for (member in list) {
-            no = Math.round(Math.random() * (list_copy.length - 1));            
+            no = Math.round(Math.random() * (list_copy.length - 1));
             while (list_copy[no] == list[member]) {
                 no = Math.round(Math.random() * (list_copy.length - 1));
                 if (list_copy.length == 1) {
@@ -95,7 +83,7 @@ assign = function (groupID) {
                 'partner_uid': assigned[member]
             })
         }
-        db.collection('Group').doc(groupID).update({assign_complete: true})
+        db.collection('Group').doc(groupID).update({ assign_complete: 'assigned' })
     })
 }
 var un_assign = function (groupID) {
@@ -106,9 +94,52 @@ var un_assign = function (groupID) {
                 'partner_uid': FieldValue.delete()
             })
         })
+        db.collection('Group').doc(groupID).update({ assign_complete: 'un-assigned' })
     })
 }
-/******** Modification of Groups */
+/** Add group membership to user profile **UN-USED ** */
+var syncMembers = function (users, groupID) {
+    for (user in users) {
+        var checkDoc = db.collection('users').doc(users[user]).collection("groups").doc(groupID).get().then(function (doc) {
+            if (!doc.exists) {
+                var setDoc = db.collection('users').doc(users[user]).collection("groups").doc(groupID).set({
+                    id: groupID
+                });
+            }
+        })
+    }
+}
+/* ************************************************ Create Group
+Sets up group in backend.  
+*/
+exports.createGroup = functions.firestore.document('Group/{groupID}').onCreate((event) => {
+    let groupID = event.params.groupID;
+    var dataref = db.collection('Group').doc(groupID).get().then(
+        function (doc) {
+            if (!doc.exists) {
+                console.warn('No such document!');
+            } else {
+                db.collection('Group').doc(groupID).collection('Members').get().then(function (querySnapshot) {
+                    querySnapshot.forEach(function (doc) {
+                        db.collection('users').doc(doc.id).collection("groups").doc(groupID).set({
+                            id: groupID
+                        });
+                        db.collection('users').doc(doc.id).get().then(function (doc) {
+                            db.collection('Group').doc(groupID).collection('Members').doc(doc.id).update({ name: doc.data().name })
+                        });
+                    })
+                })
+                db.collection('Group').doc(groupID).update({ Processing: 'complete' })
+            }
+        }
+    ).catch(err => {
+        console.warn('Error getting document', err);
+    });
+
+    return true;
+})
+
+//********************************************Modification of Groups
 exports.ModifyGroup = functions.firestore.document('Group/{groupID}').onUpdate(function (event) {
     let groupID = event.params.groupID;
     var dataref = db.collection('Group').doc(groupID).get().then(
@@ -146,7 +177,7 @@ exports.ModifyGroup = functions.firestore.document('Group/{groupID}').onUpdate(f
     return true;
 })
 
-/** Add member to group by Group Admin */
+// Add member to group by email address (Group Admin)
 exports.addGroupMember = functions.firestore.document('Group/{groupID}/email_addr/{address}').onCreate(function (event) {
     var groupID = event.params.groupID;
     var eaddress = event.params.address;
@@ -165,7 +196,7 @@ exports.addGroupMember = functions.firestore.document('Group/{groupID}/email_add
     })
     return true;
 })
-
+// Modify Group Membership
 exports.modGroupMember = functions.firestore.document('Group/{groupID}/Members/{memberID}').onUpdate(function (event) {
     var groupID = event.params.groupID;
     var memberID = event.params.memberID;
@@ -178,7 +209,83 @@ exports.modGroupMember = functions.firestore.document('Group/{groupID}/Members/{
     })
     return;
 })
+//******************************************** Users Modification
+//Propagate User Profile Changes Across Application (ie name changes)
+exports.modifyUser = functions.firestore.document('users/{userID}').onUpdate((event) => {
+    var newData = event.data;
+    var oldData = event.data.previous;
+    var userid = event.params.userID
+    //Changing Name Function
+    function changeName(name) {
+        db.collection('users').doc(userid).collection('groups').get().then(function (querySet) {
+            querySet.forEach(function (doc) {
+                db.collection('Group').doc(doc.id).collection('Members').doc(userid).update({ name: name })
+            })
+        })
+    }
+    //If the name has changed then run changeName Function
+    if (newData.data().name != oldData.data().name) {
+        changeName(newData.data().name);
+    }
+    if (Date.parse(newData.data().last_signedIn) > 1516278198000) {
+        var dbRef = db.collection("users").doc(userid).collection('groups')
+        dbRef.get().then(function (doc) {
+            doc.forEach(function (doc) {
+                var id = doc.id;
+                dbRef.doc(id).update({ id: id })
+            })
+        })
+    }
+    if(newData.data().last_signedIn !== oldData.data().last_signedIn){
+        syncGroupOrder(userid);
+    }
+    if(!newData.data().groupOrder){
+        syncGroupOrder(userid);
+    }
+    return;
+})
 
+
+exports.modifyUserGroupMembership = functions.firestore.document('users/{userID}/groups/{groupID}').onUpdate((event) => {
+    var userID = event.params.userID;
+    var groupID = event.params.groupID;
+    var groupCustData = event.data.data();
+    var groupOrder = []
+    var docRef = db.collection('users').doc(userID)
+    db.runTransaction(function (transaction) {
+        return transaction.get(docRef).then(function (doc) {
+            if (doc.data().groupOrder) {
+                groupOrder = doc.data().groupOrder;
+            }
+            if (!groupOrder.find((x) => {return x == groupCustData.id})) {
+                groupOrder.push(groupCustData.id)
+            }
+            transaction.update(docRef, { groupOrder: groupOrder })
+        })
+    })
+    return;
+})
+
+exports.deleteUserGroupMembership = functions.firestore.document('users/{userID}/groups/{groupID}').onDelete((event) => {
+    var userID = event.params.userID;
+    var groupID = event.params.groupID;
+    var groupCustData = event.data.previous.data();
+    var groupOrder = []
+    var docRef = db.collection('users').doc(userID)
+    db.runTransaction(function (transaction) {
+        return transaction.get(docRef).then(function (doc) {
+            if (doc.data().groupOrder) {
+                groupOrder = doc.data().groupOrder;
+                var new_groupOrder = groupOrder.filter(function (x) { return x != groupCustData.id });
+                transaction.update(docRef, { groupOrder: new_groupOrder })
+            }
+        })
+    })
+    return;
+})
+
+
+// *************************************** HTTP Functions
 exports.updateDB = functions.https.onRequest((req, res) => {
     //Look for old database entries and migrate to new entries
     db.collection('Group').get().then(function (querySnapshot) {
@@ -195,47 +302,36 @@ exports.updateDB = functions.https.onRequest((req, res) => {
         })
     })
 })
+
+function syncGroupOrder(userID) {
+    var dbref = db.collection('users').doc(userID)
+    dbref.get().then(function (doc) {
+        if (doc.data().groupOrder) {
+            var groupOrder = doc.data().groupOrder;
+        } else {
+            var groupOrder = []
+        }
+        var testGroup = []
+        dbref.collection('groups').get().then(function (queryset) {
+            queryset.forEach(function (doc) {
+                if (!groupOrder.find(x => x == doc.data().id)) {
+                    groupOrder.push(doc.data().id)
+                }
+                testGroup.push(doc.data().id)
+            })
+            var newGroupOrder = []
+            groupOrder.forEach((el, ind) => {
+                    if(testGroup.includes(el)){
+                        newGroupOrder.push(el)
+                    }
+            })
+            groupOrder = newGroupOrder;
+            dbref.update({ groupOrder: groupOrder })
+        })
+    })
+}
 /*
 exports.JoinCode = functions.firestore.document('Group/{groupID}/joinCodeActive').onUpdate((event) => {
 
 */
-function deleteCollection(db, collectionRef, batchSize) {
 
-    var query = collectionRef.orderBy('__name__').limit(batchSize);
-
-    return new Promise((resolve, reject) => {
-        deleteQueryBatch(db, query, batchSize, resolve, reject);
-    });
-}
-
-function deleteQueryBatch(db, query, batchSize, resolve, reject) {
-    query.get()
-        .then((snapshot) => {
-            // When there are no documents left, we are done
-            if (snapshot.size == 0) {
-                return 0;
-            }
-
-            // Delete documents in a batch
-            var batch = db.batch();
-            snapshot.docs.forEach((doc) => {
-                batch.delete(doc.ref);
-            });
-
-            return batch.commit().then(() => {
-                return snapshot.size;
-            });
-        }).then((numDeleted) => {
-            if (numDeleted === 0) {
-                resolve();
-                return;
-            }
-
-            // Recurse on the next process tick, to avoid
-            // exploding the stack.
-            process.nextTick(() => {
-                deleteQueryBatch(db, query, batchSize, resolve, reject);
-            });
-        })
-        .catch(reject);
-}

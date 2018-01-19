@@ -8,10 +8,6 @@ document.addEventListener('DOMContentLoaded', function () {
     //Firestore: 
     db = firebase.firestore();
     currUser = firebase.auth().currentUser;
-    groups = [];
-    groupIds = [];
-    editBody = null;
-    grpshow = [];
 
     // ----------------- Authentication State
     var authState = function () {
@@ -21,18 +17,15 @@ document.addEventListener('DOMContentLoaded', function () {
             dataBindings = {
                 loggedIn: false,
                 user: user,
-                groups: groups,
-                groupSel: "-1",
-                editBody: editBody,
+                groups_uncomp: [],
+                
                 newGroup: {
                     name: null
                 },
                 profile: {
                     name: null
                 },
-                newMemberEmail: null,
-                grpshow: grpshow,
-                groupIds: groupIds
+                newMemberEmail: null
             }
             appInstance = new Vue({
                 el: '#app',
@@ -41,6 +34,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     signOut: signOut,
                     createGroup: createGroup,
                     saveProfile: saveProfile,
+                    populateGroups: populateGroups,
                     addMember: addMember,
                     openSignIn: openSignIn,
                     delMember: delMember,
@@ -48,8 +42,54 @@ document.addEventListener('DOMContentLoaded', function () {
                     unmatch: unmatch
                 },
                 components: {
-                    'loader':{
+                    'loader': {
                         template: '<div class="loader"></div>'
+                    }
+                },
+                watch: {
+                    groups_uncomp: {
+                        handler: function (groups) {
+                            for (groupInd in groups) {
+                                if (groups[groupInd].data.assign == true) {
+                                    for (member in groups[groupInd].members) {
+                                        var part_id = groups[groupInd].members[member].partner_uid;
+                                        var partner_name = groups[groupInd].members.find(function (selMem, index) {
+                                            return selMem.uid == part_id;
+                                        }).name
+                                        this.groups_uncomp[groupInd].members[member].pname = partner_name;
+                                    }
+                                }
+                            }
+                        },
+                        deep: true
+                    }
+                },
+                computed:{
+                    groups: function (){
+                        if(this.user){
+                            var comp_group_array = []
+                            var uncomp = this.groups_uncomp;
+                            grporder_arr = this.profile.groupOrder
+                            if(grporder_arr){
+                                grporder_arr.forEach(el => {
+                                comp_group_array.push(uncomp.find(x => x.id == el))
+                            })
+                            console.log(comp_group_array)
+                            return comp_group_array}
+                           }
+                        } ,
+                    group_ready: function(){
+                        var filt = this.groups.filter(el => el == undefined)
+                        //console.log(filt[0]==undefined)
+                        var returnvar = false;
+                        if(filt.length > 0){
+                            returnvar = false;
+                        }
+                        else{
+                            returnvar = true;
+                        }
+                        console.log(returnvar)
+                        return returnvar
                     }
                 }
             })
@@ -57,14 +97,15 @@ document.addEventListener('DOMContentLoaded', function () {
             if (user) {
                 dataBindings.loggedIn = true;
                 userDBHandle(user);
-                populateGroups(user);
+                appInstance.populateGroups(user);
                 currUser = firebase.auth().currentUser;
+                db.collection("users").doc(currUser.uid).update({last_signedIn: new Date})
 
             }
             else {
                 dataBindings.loggedIn = false;
             }
-
+            document.getElementById("app").style.visibility = "visible";
         }, function (error) {
             console.log(error);
         });
@@ -77,6 +118,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const uiConfig = {
         callbacks: {
             signInSuccess: function (currentUser, credential, redirectUrl) {
+                
                 document.write("loading...");
                 return true;
             }
@@ -100,12 +142,12 @@ document.addEventListener('DOMContentLoaded', function () {
         usrdocRef.get().then(function (doc) {
             if (doc.exists) {
                 console.log("Document data:", doc.data());
-                appInstance.profile.name = doc.data().name;
+                appInstance.profile = doc.data();
             } else {
                 db.collection("users").doc((user.uid)).set({
                     userid: user.uid,
                     email: user.email,
-                    name: null,
+                    name: user.email,
                     joined: new Date
                 })
                     .catch(function (error) {
@@ -119,43 +161,24 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     // View Groups List
     var populateGroups = function (user) {
+        var groups = this.groups_uncomp;
         var members = function (doc, loc, assign) {
             var namelist = [];
             loc.collection('Members').get().then(function (querySnapshot) {
                 querySnapshot.forEach(function (doc) {
-                    var data = {}
-                    if (assign) {
-                        db.collection('users').doc(doc.data().partner_uid).get().then(function (doc) {
-                            data.pid = doc.data().userid;
-                            if (doc.data().name) {
-                                data.pname = doc.data().name;
-                            }
-                            else {
-                                data.pname = "un-named user: " + doc.data().userid;
-                            }
-                        });
-                    }
-                    db.collection("users").doc(doc.data().uid).get().then(function (doc) {
-                        data.id = doc.id;
-                        if (doc.data().name) {
-                            data.name = doc.data().name;
-                        }
-                        else {
-                            data.name = "un-named user: " + doc.data().userid;
-                        }
-                    })
-                    namelist.push(data)
+                    namelist.push(doc.data())
                 })
             })
             return namelist;
         }
         //View Groups
         var querygroups = function (doc) {
+            var grp_in_usr = doc.data()
             var loc = db.collection("Group").doc(doc.id);
             loc.get().then(function (doc) {
                 if (doc.exists) {
-                    groups.push({ data: doc.data(), grpshow: false, members: members(doc, loc, doc.data().assign) });
-                    groupIds.push(doc.id);
+                    groups.push({
+                        data: doc.data(), grpshow: false, members: members(doc, loc, doc.data().assign), id: doc.id});
                 }
                 else {
                     //throw an exception
@@ -174,15 +197,15 @@ document.addEventListener('DOMContentLoaded', function () {
         let formParams = this.newGroup;
         //Stuff to Create Groups
         var addGroupRef = db.collection("Group");
-        var userid = this.user.uid
+        var user = this.user;
         addGroupRef.add({
             Name: formParams.name,
             Administrator: this.user.uid,
             //Members: [this.user.uid],
         }).then(function (docRef) {
             var batch = db.batch();
-            batch.set(db.collection("Group").doc(docRef.id).collection("Members").doc(userid), { "uid": userid });
-            batch.set(db.collection("Group").doc(docRef.id).collection("Administrators").doc(userid), { "uid": userid });
+            batch.set(db.collection("Group").doc(docRef.id).collection("Members").doc(user.uid), { "uid": user.uid });
+            batch.set(db.collection("Group").doc(docRef.id).collection("Administrators").doc(user.uid), { "uid": user.uid });
             batch.commit().then(function () {
                 //Group Created Message / Action ....
                 $('#addModal').modal('hide');
@@ -217,15 +240,15 @@ document.addEventListener('DOMContentLoaded', function () {
     function openSignIn() {
         $('#SignInModal').modal('show');
     }
-function match(groupID){
-db.collection("Group").doc(groupID).update({assign: true})
-}
+    function match(groupID) {
+        db.collection("Group").doc(groupID).update({ assign: true })
+    }
 
-function unmatch(groupID){
-    db.collection("Group").doc(groupID).update({assign: false})
+    function unmatch(groupID) {
+        db.collection("Group").doc(groupID).update({ assign: false })
     }
     //
     //JS LOAD COMPLETE
-    document.getElementById("app").style.visibility = "visible";
+
 
 });

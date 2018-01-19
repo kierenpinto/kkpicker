@@ -1,0 +1,19 @@
+function checkGroupLists(userID){
+    var userRef = db.collection('users').doc(userID)
+    var grpRef = userRef.collection('groups');
+         userRef.get().then(doc => {
+            var Total = 0;
+            if (doc.data().groupsum) {
+                Total = doc.data().groupsum;
+            }
+            grpRef.get().then(snapshot => {
+                snapshot.forEach(doc => {
+                    if (!doc.data().order) {
+                        grpRef.doc(doc.id).update( { order: Total })
+                        Total = Total + 1;
+                    }
+                })
+                userRef.update( { groupsum: Total })
+            })
+        })
+}
