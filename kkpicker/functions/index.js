@@ -1,5 +1,6 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const randomstring = require('randomstring'); // https://www.npmjs.com/package/randomstring
 admin.initializeApp(functions.config().firebase);
 var db = admin.firestore();
 
@@ -18,9 +19,16 @@ function deleteCollection(db, collectionRef, batchSize) {
 
     return new Promise((resolve, reject) => {
         deleteQueryBatch(db, query, batchSize, resolve, reject);
+        return;
     });
 }
-
+function generateJoinCode(){
+    var code = randomstring.generate({
+        length: 8,
+        charset: 'alphanumeric'
+      });
+    return code
+}
 function deleteQueryBatch(db, query, batchSize, resolve, reject) {
     query.get()
         .then((snapshot) => {
@@ -33,8 +41,8 @@ function deleteQueryBatch(db, query, batchSize, resolve, reject) {
             var batch = db.batch();
             snapshot.docs.forEach((doc) => {
                 batch.delete(doc.ref);
+                return;
             });
-
             return batch.commit().then(() => {
                 return snapshot.size;
             });
@@ -47,6 +55,7 @@ function deleteQueryBatch(db, query, batchSize, resolve, reject) {
             // exploding the stack.
             process.nextTick(() => {
                 deleteQueryBatch(db, query, batchSize, resolve, reject);
+                return;
             });
         })
         .catch(reject);
@@ -58,6 +67,7 @@ assign = function (groupID) {
         var assigned_ind = [];
         querySnapshot.forEach(function (doc) {
             list.push(doc.id)
+            return;
         })
         list_copy = list.slice(0);
         var no = 0;
@@ -97,6 +107,33 @@ var un_assign = function (groupID) {
         db.collection('Group').doc(groupID).update({ assign_complete: 'un-assigned' })
     })
 }
+function syncGroupOrder(userID) {
+    var dbref = db.collection('users').doc(userID)
+    dbref.get().then(function (doc) {
+        if (doc.data().groupOrder) {
+            var groupOrder = doc.data().groupOrder;
+        } else {
+            var groupOrder = []
+        }
+        var testGroup = []
+        dbref.collection('groups').get().then(function (queryset) {
+            queryset.forEach(function (doc) {
+                if (!groupOrder.find(x => x == doc.data().id)) {
+                    groupOrder.push(doc.data().id)
+                }
+                testGroup.push(doc.data().id)
+            })
+            var newGroupOrder = []
+            groupOrder.forEach((el, ind) => {
+                if (testGroup.includes(el)) {
+                    newGroupOrder.push(el)
+                }
+            })
+            groupOrder = newGroupOrder;
+            dbref.update({ groupOrder: groupOrder })
+        })
+    })
+}
 /** Add group membership to user profile **UN-USED ** */
 var syncMembers = function (users, groupID) {
     for (user in users) {
@@ -121,9 +158,12 @@ exports.createGroup = functions.firestore.document('Group/{groupID}').onCreate((
             } else {
                 db.collection('Group').doc(groupID).collection('Members').get().then(function (querySnapshot) {
                     querySnapshot.forEach(function (doc) {
+                        var userid = doc.id
                         db.collection('users').doc(doc.id).collection("groups").doc(groupID).set({
                             id: groupID
-                        });
+                        }).then(function(){
+                            syncGroupOrder(userid)
+                        })
                         db.collection('users').doc(doc.id).get().then(function (doc) {
                             db.collection('Group').doc(groupID).collection('Members').doc(doc.id).update({ name: doc.data().name })
                         });
@@ -168,6 +208,9 @@ exports.ModifyGroup = functions.firestore.document('Group/{groupID}').onUpdate(f
                 if (doc.data().assign == false) {
                     un_assign(groupID);
                 }
+                if(doc.data().joinCodeEnable == true){
+                    db.collection('Group').doc(groupID).update({joinCode: generateJoinCode()})    
+                }
             }
         }
     ).catch(err => {
@@ -181,19 +224,23 @@ exports.ModifyGroup = functions.firestore.document('Group/{groupID}').onUpdate(f
 exports.addGroupMember = functions.firestore.document('Group/{groupID}/email_addr/{address}').onCreate(function (event) {
     var groupID = event.params.groupID;
     var eaddress = event.params.address;
-    var checkDoc = db.collection('Group').doc(groupID).collection("email_addr").doc(eaddress).get().then(function (doc) {
-        if (doc.data().processed == false) {
-            admin.auth().getUserByEmail(doc.data().email).then(function (userRecord) {
+        if (event.data.data().processed == false) {
+            admin.auth().getUserByEmail(event.data.data().email).then(function (userRecord) {
                 var userid = userRecord.uid;
                 var setDoc = db.collection('Group').doc(groupID)
-                setDoc.collection("Members").doc(userid).set({ uid: userid });
-                db.collection('users').doc(userid).collection('groups').doc(groupID).set({ id: groupID });
+                db.collection('users').doc(userid).get().then(function(doc) {
+                    setDoc.collection("Members").doc(userid).set({ uid: userid, name: doc.data().name });
+                    return;
+                })
+                db.collection('users').doc(userid).collection('groups').doc(groupID).set({ id: groupID }).then(function(){
+                    syncGroupOrder(userid)
+                });
+                db.collection('Group').doc(groupID).collection("email_addr").doc(eaddress).update({processed: true});
             }).catch(function (error) {
                 console.warn(error)
                 db.collection('Group').doc(groupID).collection("email_addr").doc(eaddress).delete();
             })
         }
-    })
     return true;
 })
 // Modify Group Membership
@@ -203,11 +250,16 @@ exports.modGroupMember = functions.firestore.document('Group/{groupID}/Members/{
     // Check if member is to be removed and then remove member.
     var checkDoc = db.collection('Group').doc(groupID).collection('Members').doc(memberID).get().then(function (doc) {
         if (doc.data().deleted == true) {
-            db.collection('users').doc(memberID).collection('groups').doc(groupID).delete();
-            db.collection('Group').doc(groupID).collection('Members').doc(memberID).delete();
+            if(doc.data().deletedby != memberID){
+                db.collection('users').doc(memberID).collection('groups').doc(groupID).delete();
+                db.collection('Group').doc(groupID).collection('Members').doc(memberID).delete();
+            }
+            else{
+                db.collection('Group').doc(groupID).collection('Members').doc(memberID).update({deleted:false, deleteError: 'You cannot remove yourself'})
+            }
         }
     })
-    return;
+    return true;
 })
 //******************************************** Users Modification
 //Propagate User Profile Changes Across Application (ie name changes)
@@ -220,7 +272,9 @@ exports.modifyUser = functions.firestore.document('users/{userID}').onUpdate((ev
         db.collection('users').doc(userid).collection('groups').get().then(function (querySet) {
             querySet.forEach(function (doc) {
                 db.collection('Group').doc(doc.id).collection('Members').doc(userid).update({ name: name })
+                return;
             })
+            return;
         })
     }
     //If the name has changed then run changeName Function
@@ -233,16 +287,18 @@ exports.modifyUser = functions.firestore.document('users/{userID}').onUpdate((ev
             doc.forEach(function (doc) {
                 var id = doc.id;
                 dbRef.doc(id).update({ id: id })
+                return;
             })
+            return;
         })
     }
-    if(newData.data().last_signedIn !== oldData.data().last_signedIn){
+    if (newData.data().last_signedIn !== oldData.data().last_signedIn) {
         syncGroupOrder(userid);
     }
-    if(!newData.data().groupOrder){
+    if (!newData.data().groupOrder) {
         syncGroupOrder(userid);
     }
-    return;
+    return true;
 })
 
 
@@ -257,7 +313,7 @@ exports.modifyUserGroupMembership = functions.firestore.document('users/{userID}
             if (doc.data().groupOrder) {
                 groupOrder = doc.data().groupOrder;
             }
-            if (!groupOrder.find((x) => {return x == groupCustData.id})) {
+            if (!groupOrder.find((x) => { return x == groupCustData.id })) {
                 groupOrder.push(groupCustData.id)
             }
             transaction.update(docRef, { groupOrder: groupOrder })
@@ -281,7 +337,7 @@ exports.deleteUserGroupMembership = functions.firestore.document('users/{userID}
             }
         })
     })
-    return;
+    return true;
 })
 
 
@@ -303,35 +359,4 @@ exports.updateDB = functions.https.onRequest((req, res) => {
     })
 })
 
-function syncGroupOrder(userID) {
-    var dbref = db.collection('users').doc(userID)
-    dbref.get().then(function (doc) {
-        if (doc.data().groupOrder) {
-            var groupOrder = doc.data().groupOrder;
-        } else {
-            var groupOrder = []
-        }
-        var testGroup = []
-        dbref.collection('groups').get().then(function (queryset) {
-            queryset.forEach(function (doc) {
-                if (!groupOrder.find(x => x == doc.data().id)) {
-                    groupOrder.push(doc.data().id)
-                }
-                testGroup.push(doc.data().id)
-            })
-            var newGroupOrder = []
-            groupOrder.forEach((el, ind) => {
-                    if(testGroup.includes(el)){
-                        newGroupOrder.push(el)
-                    }
-            })
-            groupOrder = newGroupOrder;
-            dbref.update({ groupOrder: groupOrder })
-        })
-    })
-}
-/*
-exports.JoinCode = functions.firestore.document('Group/{groupID}/joinCodeActive').onUpdate((event) => {
-
-*/
 

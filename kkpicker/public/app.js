@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 loggedIn: false,
                 user: user,
                 groups_uncomp: [],
-                
+
                 newGroup: {
                     name: null
                 },
@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 methods: {
                     signOut: signOut,
                     createGroup: createGroup,
+                    delGroup:delGroup,
                     saveProfile: saveProfile,
                     populateGroups: populateGroups,
                     addMember: addMember,
@@ -64,31 +65,30 @@ document.addEventListener('DOMContentLoaded', function () {
                         deep: true
                     }
                 },
-                computed:{
-                    groups: function (){
-                        if(this.user){
+                computed: {
+                    groups: function () {
+                        if (this.user) {
                             var comp_group_array = []
                             var uncomp = this.groups_uncomp;
                             grporder_arr = this.profile.groupOrder
-                            if(grporder_arr){
+                            if (grporder_arr) {
                                 grporder_arr.forEach(el => {
-                                comp_group_array.push(uncomp.find(x => x.id == el))
-                            })
-                            console.log(comp_group_array)
-                            return comp_group_array}
-                           }
-                        } ,
-                    group_ready: function(){
+                                    comp_group_array.push(uncomp.find(x => String(x.id) === String(el)))
+                                })
+                                return comp_group_array
+                            }
+                        }
+                    },
+                    group_ready: function () {
                         var filt = this.groups.filter(el => el == undefined)
                         //console.log(filt[0]==undefined)
                         var returnvar = false;
-                        if(filt.length > 0){
+                        if (filt.length > 0) {
                             returnvar = false;
                         }
-                        else{
+                        else {
                             returnvar = true;
                         }
-                        console.log(returnvar)
                         return returnvar
                     }
                 }
@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 userDBHandle(user);
                 appInstance.populateGroups(user);
                 currUser = firebase.auth().currentUser;
-                db.collection("users").doc(currUser.uid).update({last_signedIn: new Date})
+                db.collection("users").doc(currUser.uid).update({ last_signedIn: new Date })
 
             }
             else {
@@ -118,7 +118,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const uiConfig = {
         callbacks: {
             signInSuccess: function (currentUser, credential, redirectUrl) {
-                
+
                 document.write("loading...");
                 return true;
             }
@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', function () {
     //Handle Users:
     function userDBHandle(user) {
         var usrdocRef = db.collection("users").doc(user.uid);
-        usrdocRef.get().then(function (doc) {
+        usrdocRef.onSnapshot(function (doc) {
             if (doc.exists) {
                 console.log("Document data:", doc.data());
                 appInstance.profile = doc.data();
@@ -155,40 +155,59 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                 console.log("created new user " + String(user.uid));
             }
-        }).catch(function (error) {
+        })/*.catch(function (error) {
             console.log("Error getting user document:", error);
-        });
+        });*/
     }
     // View Groups List
     var populateGroups = function (user) {
         var groups = this.groups_uncomp;
         var members = function (doc, loc, assign) {
             var namelist = [];
-            loc.collection('Members').get().then(function (querySnapshot) {
-                querySnapshot.forEach(function (doc) {
-                    namelist.push(doc.data())
+            loc.collection('Members').onSnapshot(function (querySnapshot) {
+                querySnapshot.docChanges.forEach(function (change) {
+                    if(change.type == "added"){
+                        namelist.push(change.doc.data())
+                    }
+                    if(change.type =="modified"){
+                        var ind=namelist.findIndex((el)=> el.uid == change.doc.data().uid)
+                        console.log(namelist, '   ', ind)
+                        namelist.splice(ind,1,change.doc.data())
+                    }
+                    if(change.type =="deleted"){
+                        namelist.splice(()=>{return namelist.findIndex((el)=> el.uid == change.doc.data().uid)},1)
+                    }
                 })
             })
             return namelist;
         }
         //View Groups
-        var querygroups = function (doc) {
+        var querygroups = function (doc,index) {
+            
             var grp_in_usr = doc.data()
             var loc = db.collection("Group").doc(doc.id);
-            loc.get().then(function (doc) {
+            loc.onSnapshot(function (doc) {
                 if (doc.exists) {
-                    groups.push({
-                        data: doc.data(), grpshow: false, members: members(doc, loc, doc.data().assign), id: doc.id});
+                    var groupData = {
+                        data: doc.data(), grpshow: false, members: members(doc, loc, doc.data().assign), id: doc.id
+                    }
+                    groups.splice(index,1,groupData);
+                    //groups.push(groupData)
+                    //console.log(groupData)
                 }
                 else {
                     //throw an exception
                 }
-            }).catch(function (error) { console.log("Error getting documents: ", error); })
+            })/*.catch(function (error) { console.log("Error getting documents: ", error); })*/
         }
 
-        var viewGroupRef = db.collection("users").doc(user.uid).collection("groups").get()
-            .then(function (querySnapshot) {
-                querySnapshot.forEach(function (doc) { querygroups(doc) })
+        var viewGroupRef = db.collection("users").doc(user.uid).collection("groups")
+            .onSnapshot(function (querySnapshot) {
+                querySnapshot.docChanges.forEach(function (change,index) { 
+                    if (change.type ==="added"){
+                        querygroups(change.doc,index)
+                    }
+                })
             })
     }
 
@@ -232,9 +251,17 @@ document.addEventListener('DOMContentLoaded', function () {
     function delMember(groupID, memberID) {
         console.log("deleted", memberID, "from", groupID);
         db.collection("Group").doc(groupID).collection('Members').doc(memberID).update({
-            'deleted': true
+            'deleted': true,
+            deletedby: this.user.uid
         }).then(function (doc) {
             //Refresh Group or Page
+        })
+    }
+
+    function delGroup(groupID){
+        db.collection("Group").doc(groupID).update({
+            'deleted': true,
+            deletedby: this.user.uid
         })
     }
     function openSignIn() {
