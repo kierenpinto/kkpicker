@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     delGroup:delGroup,
                     saveProfile: saveProfile,
                     populateGroups: populateGroups,
+                    showGroup:showGroup,
                     addMember: addMember,
                     openSignIn: openSignIn,
                     delMember: delMember,
@@ -182,30 +183,38 @@ document.addEventListener('DOMContentLoaded', function () {
             return namelist;
         }
         //View Groups
-        var querygroups = function (doc,index) {
-            
-            var grp_in_usr = doc.data()
+        var querygroups = function (doc,index, show_group) {
+
             var loc = db.collection("Group").doc(doc.id);
-            loc.onSnapshot(function (doc) {
-                if (doc.exists) {
-                    var groupData = {
-                        data: doc.data(), grpshow: false, members: members(doc, loc, doc.data().assign), id: doc.id
+                loc.onSnapshot(function (doc) {
+                    if (doc.exists) {
+                        var groupData = {
+                            data: doc.data(), grpshow: show_group, members: members(doc, loc, doc.data().assign), id: doc.id
+                        }
+                        /*
+                        groupData.data = doc.data();
+                        groupData.members = members(doc, loc, doc.data().assign);
+                        groupData.id=doc.id*/
+                        groups.splice(index,1,groupData);
                     }
-                    groups.splice(index,1,groupData);
-                    //groups.push(groupData)
-                    //console.log(groupData)
-                }
-                else {
-                    //throw an exception
-                }
-            })/*.catch(function (error) { console.log("Error getting documents: ", error); })*/
+                    else {
+                        //throw an exception
+                    }
+                })/*.catch(function (error) { console.log("Error getting documents: ", error); })*/
+            
         }
 
         var viewGroupRef = db.collection("users").doc(user.uid).collection("groups")
             .onSnapshot(function (querySnapshot) {
-                querySnapshot.docChanges.forEach(function (change,index) { 
+                querySnapshot.docChanges.forEach(function (change,index) {
+                    var show_group = change.doc.data().show;
+                    if (show_group == undefined){show_group = true}
                     if (change.type ==="added"){
-                        querygroups(change.doc,index)
+                        console.log(show_group)
+                        querygroups(change.doc,index, show_group)
+                    }      
+                    if (change.type ==="modified"){
+                        groups.find(el => el.id === change.doc.data().id).grpshow = show_group;
                     }
                 })
             })
@@ -273,6 +282,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function unmatch(groupID) {
         db.collection("Group").doc(groupID).update({ assign: false })
+    }
+
+    function showGroup(groupID,val){
+        db.collection("users").doc(this.profile.userid).collection('groups').doc(groupID).update({show: val});
     }
     //
     //JS LOAD COMPLETE
