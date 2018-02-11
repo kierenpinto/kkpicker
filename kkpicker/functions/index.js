@@ -22,13 +22,23 @@ function deleteCollection(db, collectionRef, batchSize) {
         return;
     });
 }
-function generateJoinCode(){
+/* function generateJoinCode(){
     var code = randomstring.generate({
         length: 8,
         charset: 'alphanumeric'
       });
+
     return code
-}
+} */
+
+function generateJoinCode(length) {
+    var text = "";
+    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    for (var i = 0; i < length; i++){
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    return text;
+  }
 function deleteQueryBatch(db, query, batchSize, resolve, reject) {
     query.get()
         .then((snapshot) => {
@@ -134,6 +144,16 @@ function syncGroupOrder(userID) {
         })
     })
 }
+function addGroupUser(userid,groupID){
+    var setDoc = db.collection('Group').doc(groupID)
+    db.collection('users').doc(userid).get().then(function(doc) {
+        setDoc.collection("Members").doc(userid).set({ uid: userid, name: doc.data().name });
+        return;
+    })
+    db.collection('users').doc(userid).collection('groups').doc(groupID).set({ id: groupID }).then(function(){
+        syncGroupOrder(userid)
+    });
+}
 /** Add group membership to user profile **UN-USED ** */
 var syncMembers = function (users, groupID) {
     for (user in users) {
@@ -208,8 +228,8 @@ exports.ModifyGroup = functions.firestore.document('Group/{groupID}').onUpdate(f
                 if (doc.data().assign == false) {
                     un_assign(groupID);
                 }
-                if(doc.data().joinCodeEnable == true){
-                    db.collection('Group').doc(groupID).update({joinCode: generateJoinCode()})    
+                if(doc.data().joinCode.enabled == true && doc.data().joinCode.enabled == true){
+                    db.collection('Group').doc(groupID).update({joinCode: {code:generateJoinCode(6),enabled: 'true',processing: false}})    
                 }
             }
         }
@@ -340,6 +360,28 @@ exports.deleteUserGroupMembership = functions.firestore.document('users/{userID}
     return true;
 })
 
+exports.joinRequest = functions.firestore.document('joinRequests/{requestID}').onWrite(event=>{
+    var fields = event.data.data();
+    var uid = fields.uid;
+    var code = fields.code;
+    db.collection('Group').where("joinCode.code","==",code).get().then(doc=>{
+        var group = doc.id;
+        addGroupUser(uid,group);
+    })
+})
+// *************************************** AUTH Functions
+
+exports.newUsr = functions.auth.user().onCreate(event=>{
+    const user = event.data;
+    db.collection("users").doc((user.uid)).set({
+        userid: user.uid,
+        email: user.email,
+        name: user.displayName,
+        joined: new Date
+    }).catch(function (error) {
+        console.error("Error adding user document: ", error);
+    });
+})
 
 // *************************************** HTTP Functions
 exports.updateDB = functions.https.onRequest((req, res) => {

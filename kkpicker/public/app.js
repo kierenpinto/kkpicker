@@ -25,7 +25,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 profile: {
                     name: null
                 },
-                newMemberEmail: null
+                newMemberEmail: null,
+                code: "",
+                menu: null
             }
             appInstance = new Vue({
                 el: '#app',
@@ -33,15 +35,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 methods: {
                     signOut: signOut,
                     createGroup: createGroup,
-                    delGroup:delGroup,
+                    delGroup: delGroup,
                     saveProfile: saveProfile,
                     populateGroups: populateGroups,
-                    showGroup:showGroup,
+                    showGroup: showGroup,
                     addMember: addMember,
+                    moveGroupUp: moveGroupUp,
+                    moveGroupDown: moveGroupDown,
                     openSignIn: openSignIn,
                     delMember: delMember,
                     match: match,
-                    unmatch: unmatch
+                    unmatch: unmatch,
+                    joinGroup: joinGroup,
+                    toggleMenu : function(){this.menu.open = !this.menu.open}
                 },
                 components: {
                     'loader': {
@@ -101,7 +107,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 appInstance.populateGroups(user);
                 currUser = firebase.auth().currentUser;
                 db.collection("users").doc(currUser.uid).update({ last_signedIn: new Date })
-
             }
             else {
                 dataBindings.loggedIn = false;
@@ -145,16 +150,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.log("Document data:", doc.data());
                 appInstance.profile = doc.data();
             } else {
-                db.collection("users").doc((user.uid)).set({
-                    userid: user.uid,
-                    email: user.email,
-                    name: user.email,
-                    joined: new Date
-                })
-                    .catch(function (error) {
-                        console.error("Error adding user document: ", error);
-                    });
-                console.log("created new user " + String(user.uid));
+                //user doesn't exist throw error
             }
         })/*.catch(function (error) {
             console.log("Error getting user document:", error);
@@ -167,53 +163,53 @@ document.addEventListener('DOMContentLoaded', function () {
             var namelist = [];
             loc.collection('Members').onSnapshot(function (querySnapshot) {
                 querySnapshot.docChanges.forEach(function (change) {
-                    if(change.type == "added"){
+                    if (change.type == "added") {
                         namelist.push(change.doc.data())
                     }
-                    if(change.type =="modified"){
-                        var ind=namelist.findIndex((el)=> el.uid == change.doc.data().uid)
+                    if (change.type == "modified") {
+                        var ind = namelist.findIndex((el) => el.uid == change.doc.data().uid)
                         console.log(namelist, '   ', ind)
-                        namelist.splice(ind,1,change.doc.data())
+                        namelist.splice(ind, 1, change.doc.data())
                     }
-                    if(change.type =="deleted"){
-                        namelist.splice(()=>{return namelist.findIndex((el)=> el.uid == change.doc.data().uid)},1)
+                    if (change.type == "deleted") {
+                        namelist.splice(() => { return namelist.findIndex((el) => el.uid == change.doc.data().uid) }, 1)
                     }
                 })
             })
             return namelist;
         }
         //View Groups
-        var querygroups = function (doc,index, show_group) {
+        var querygroups = function (doc, index, show_group) {
 
             var loc = db.collection("Group").doc(doc.id);
-                loc.onSnapshot(function (doc) {
-                    if (doc.exists) {
-                        var groupData = {
-                            data: doc.data(), grpshow: show_group, members: members(doc, loc, doc.data().assign), id: doc.id
-                        }
-                        /*
-                        groupData.data = doc.data();
-                        groupData.members = members(doc, loc, doc.data().assign);
-                        groupData.id=doc.id*/
-                        groups.splice(index,1,groupData);
+            loc.onSnapshot(function (doc) {
+                if (doc.exists) {
+                    var groupData = {
+                        data: doc.data(), grpshow: show_group, members: members(doc, loc, doc.data().assign), id: doc.id
                     }
-                    else {
-                        //throw an exception
-                    }
-                })/*.catch(function (error) { console.log("Error getting documents: ", error); })*/
-            
+                    /*
+                    groupData.data = doc.data();
+                    groupData.members = members(doc, loc, doc.data().assign);
+                    groupData.id=doc.id*/
+                    groups.splice(index, 1, groupData);
+                }
+                else {
+                    //throw an exception
+                }
+            })/*.catch(function (error) { console.log("Error getting documents: ", error); })*/
+
         }
 
         var viewGroupRef = db.collection("users").doc(user.uid).collection("groups")
             .onSnapshot(function (querySnapshot) {
-                querySnapshot.docChanges.forEach(function (change,index) {
+                querySnapshot.docChanges.forEach(function (change, index) {
                     var show_group = change.doc.data().show;
-                    if (show_group == undefined){show_group = true}
-                    if (change.type ==="added"){
+                    if (show_group == undefined) { show_group = true }
+                    if (change.type === "added") {
                         console.log(show_group)
-                        querygroups(change.doc,index, show_group)
-                    }      
-                    if (change.type ==="modified"){
+                        querygroups(change.doc, index, show_group)
+                    }
+                    if (change.type === "modified") {
                         groups.find(el => el.id === change.doc.data().id).grpshow = show_group;
                     }
                 })
@@ -267,7 +263,7 @@ document.addEventListener('DOMContentLoaded', function () {
         })
     }
 
-    function delGroup(groupID){
+    function delGroup(groupID) {
         db.collection("Group").doc(groupID).update({
             'deleted': true,
             deletedby: this.user.uid
@@ -284,11 +280,28 @@ document.addEventListener('DOMContentLoaded', function () {
         db.collection("Group").doc(groupID).update({ assign: false })
     }
 
-    function showGroup(groupID,val){
-        db.collection("users").doc(this.profile.userid).collection('groups').doc(groupID).update({show: val});
+    function showGroup(groupID, val) {
+        db.collection("users").doc(this.profile.userid).collection('groups').doc(groupID).update({ show: val });
+    }
+    function moveGroupUp(groupID) {
+        var ord = this.profile.groupOrder
+        var index = ord.findIndex(el => el == groupID)
+        ord.splice(index, 1)
+        ord.splice(index - 1, 0, groupID)
+        db.collection("users").doc(this.profile.userid).update({groupOrder: ord})
+    }
+    function moveGroupDown(groupID) {
+        var ord = this.profile.groupOrder
+        var index = ord.findIndex(el => el == groupID)
+        ord.splice(index, 1)
+        ord.splice(index + 1, 0, groupID)
+        db.collection("users").doc(this.profile.userid).update({groupOrder: ord})
+    }
+    function joinGroup(code){
+        db.collection('joinRequests').add({uid: this.profile.userid, code:code})
     }
     //
     //JS LOAD COMPLETE
 
-
+    
 });
