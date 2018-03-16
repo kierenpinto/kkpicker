@@ -34,3 +34,44 @@
 [info] i  hosting: Serving hosting files from: public
 [info] ✔  hosting: Local server: http://localhost:5000
 
+[debug] [2018-03-15T09:00:50.758Z] ----------------------------------------------------------------------
+[debug] [2018-03-15T09:00:50.761Z] Command:       /usr/local/bin/node /usr/local/bin/firebase serve
+[debug] [2018-03-15T09:00:50.761Z] CLI Version:   3.17.6
+[debug] [2018-03-15T09:00:50.761Z] Platform:      linux
+[debug] [2018-03-15T09:00:50.761Z] Node Version:  v9.4.0
+[debug] [2018-03-15T09:00:50.761Z] Time:          Thu Mar 15 2018 20:00:50 GMT+1100 (AEDT)
+[debug] [2018-03-15T09:00:50.761Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2018-03-15T09:00:50.822Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2018-03-15T09:00:50.823Z] > authorizing via signed-in user
+[debug] [2018-03-15T09:00:50.825Z] > refreshing access token with scopes: ["email","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","openid"]
+[debug] [2018-03-15T09:00:50.826Z] >>> HTTP REQUEST POST https://www.googleapis.com/oauth2/v3/token  
+ { refresh_token: '1/nqHeHkqGXsX9UbF0KReHQjWQOizQrqilyPtNDmA1EK1rd450R4WsY6GU5ubbSaUb',
+  client_id: '563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com',
+  client_secret: 'j9iVZfS8kkCEFUPaAeJV0sAi',
+  grant_type: 'refresh_token',
+  scope: 'email https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/cloudplatformprojects.readonly https://www.googleapis.com/auth/firebase openid' } 
+ Thu Mar 15 2018 20:00:50 GMT+1100 (AEDT)
+[debug] [2018-03-15T09:00:51.300Z] <<< HTTP RESPONSE 200
+[debug] [2018-03-15T09:00:51.356Z] >>> HTTP REQUEST GET https://admin.firebase.com/v1/projects/kkpicker-6a5fd  
+  
+ Thu Mar 15 2018 20:00:51 GMT+1100 (AEDT)
+[debug] [2018-03-15T09:00:52.516Z] <<< HTTP RESPONSE 200
+[debug] [2018-03-15T09:00:52.519Z] >>> HTTP REQUEST GET https://admin.firebase.com/v1/database/kkpicker-6a5fd/tokens  
+  
+ Thu Mar 15 2018 20:00:52 GMT+1100 (AEDT)
+[debug] [2018-03-15T09:00:53.381Z] <<< HTTP RESPONSE 200
+[debug] [2018-03-15T09:00:53.385Z] >>> HTTP REQUEST GET https://cloudresourcemanager.googleapis.com/v1/projects/kkpicker-6a5fd  
+  
+ Thu Mar 15 2018 20:00:53 GMT+1100 (AEDT)
+[debug] [2018-03-15T09:00:55.115Z] <<< HTTP RESPONSE 200
+[info] 
+[info] === Serving from '/home/kieren/Firebase/kkpicker/kkpicker'...
+[info] 
+[debug] [2018-03-15T09:00:55.121Z] >>> HTTP REQUEST GET https://mobilesdk-pa.googleapis.com/v1/projects/1010511095428/clients/_:getWebAppConfig  
+  
+ Thu Mar 15 2018 20:00:55 GMT+1100 (AEDT)
+[debug] [2018-03-15T09:00:56.445Z] <<< HTTP RESPONSE 200
+[info] i  hosting: Serving hosting files from: public
+[info] ✔  hosting: Local server: http://localhost:5000
+

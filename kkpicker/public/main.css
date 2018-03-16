@@ -103,3 +103,7 @@ body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvet
   .pointer {
     cursor: pointer;
   }
+
+  #login,logout{
+    cursor: pointer;
+  }
