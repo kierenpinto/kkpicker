@@ -88,7 +88,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     },
                     group_ready: function () {
                         var filt = this.groups.filter(el => el == undefined)
-                        //console.log(filt[0]==undefined)
                         var returnvar = false;
                         if (filt.length > 0) {
                             returnvar = false;
@@ -286,10 +285,12 @@ document.addEventListener('DOMContentLoaded', function () {
     function moveGroupUp(groupID) {
         var ord = this.profile.groupOrder
         var index = ord.findIndex(el => el == groupID)
-        ord.splice(index, 1)
-        ord.splice(index - 1, 0, groupID)
-        db.collection("users").doc(this.profile.userid).update({groupOrder: ord})
-    }
+        if (index != 0){
+            ord.splice(index, 1)
+            ord.splice(index - 1, 0, groupID)
+            db.collection("users").doc(this.profile.userid).update({groupOrder: ord})         
+        }
+     }
     function moveGroupDown(groupID) {
         var ord = this.profile.groupOrder
         var index = ord.findIndex(el => el == groupID)
