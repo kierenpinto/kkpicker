@@ -2,3 +2,5 @@ node_modules
 kkpicker/firebase-debug\.log
 
 kkpicker/functions/package-lock\.json
+
+*.log
