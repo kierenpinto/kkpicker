@@ -4,14 +4,6 @@ const randomstring = require('randomstring'); // https://www.npmjs.com/package/r
 admin.initializeApp(functions.config().firebase);
 var db = admin.firestore();
 
-// // Create and Deploy Your First Cloud Functions
-// // https://firebase.google.com/docs/functions/write-firebase-functions
-//
-// exports.helloWorld = functions.https.onRequest((request, response) => {
-//  response.send("Hello from Firebase!");
-// });
-
-
 //************************************************ Dependancy CODE
 function deleteCollection(db, collectionRef, batchSize) {
 
@@ -22,14 +14,7 @@ function deleteCollection(db, collectionRef, batchSize) {
         return;
     });
 }
-/* function generateJoinCode(){
-    var code = randomstring.generate({
-        length: 8,
-        charset: 'alphanumeric'
-      });
 
-    return code
-} */
 
 function generateJoinCode(length) {
     var text = "";
@@ -169,8 +154,8 @@ var syncMembers = function (users, groupID) {
 /* ************************************************ Create Group
 Sets up group in backend.  
 */
-exports.createGroup = functions.firestore.document('Group/{groupID}').onCreate((event) => {
-    let groupID = event.params.groupID;
+exports.createGroup = functions.firestore.document('Group/{groupID}').onCreate((data,context) => {
+    let groupID = context.params.groupID;
     var dataref = db.collection('Group').doc(groupID).get().then(
         function (doc) {
             if (!doc.exists) {
@@ -200,8 +185,8 @@ exports.createGroup = functions.firestore.document('Group/{groupID}').onCreate((
 })
 
 //********************************************Modification of Groups
-exports.ModifyGroup = functions.firestore.document('Group/{groupID}').onUpdate(function (event) {
-    let groupID = event.params.groupID;
+exports.ModifyGroup = functions.firestore.document('Group/{groupID}').onUpdate(function (data,context) {
+    let groupID = context.params.groupID;
     var dataref = db.collection('Group').doc(groupID).get().then(
         function (doc) {
             if (!doc.exists) {
@@ -241,11 +226,12 @@ exports.ModifyGroup = functions.firestore.document('Group/{groupID}').onUpdate(f
 })
 
 // Add member to group by email address (Group Admin)
-exports.addGroupMember = functions.firestore.document('Group/{groupID}/email_addr/{address}').onCreate(function (event) {
-    var groupID = event.params.groupID;
-    var eaddress = event.params.address;
-        if (event.data.data().processed == false) {
-            admin.auth().getUserByEmail(event.data.data().email).then(function (userRecord) {
+// New Exports with API Version 1
+exports.addGroupMember = functions.firestore.document('Group/{groupID}/email_addr/{address}').onCreate(function (data,context) {
+    var groupID = context.params.groupID;
+    var eaddress = context.params.address;
+        if (data.after.data().processed == false) {
+            admin.auth().getUserByEmail(data.after.data().email).then(function (userRecord) {
                 var userid = userRecord.uid;
                 var setDoc = db.collection('Group').doc(groupID)
                 db.collection('users').doc(userid).get().then(function(doc) {
@@ -263,10 +249,12 @@ exports.addGroupMember = functions.firestore.document('Group/{groupID}/email_add
         }
     return true;
 })
+
 // Modify Group Membership
-exports.modGroupMember = functions.firestore.document('Group/{groupID}/Members/{memberID}').onUpdate(function (event) {
-    var groupID = event.params.groupID;
-    var memberID = event.params.memberID;
+//New API 1
+exports.modGroupMember = functions.firestore.document('Group/{groupID}/Members/{memberID}').onUpdate(function (data,context) {
+    var groupID = context.params.groupID;
+    var memberID = context.params.memberID;
     // Check if member is to be removed and then remove member.
     var checkDoc = db.collection('Group').doc(groupID).collection('Members').doc(memberID).get().then(function (doc) {
         if (doc.data().deleted == true) {
@@ -283,10 +271,10 @@ exports.modGroupMember = functions.firestore.document('Group/{groupID}/Members/{
 })
 //******************************************** Users Modification
 //Propagate User Profile Changes Across Application (ie name changes)
-exports.modifyUser = functions.firestore.document('users/{userID}').onUpdate((event) => {
-    var newData = event.data;
-    var oldData = event.data.previous;
-    var userid = event.params.userID
+exports.modifyUser = functions.firestore.document('users/{userID}').onUpdate((data,context) => {
+    var newData = data.after.data();
+    var oldData = data.before.data();
+    var userid = context.params.userID;
     //Changing Name Function
     function changeName(name) {
         db.collection('users').doc(userid).collection('groups').get().then(function (querySet) {
@@ -322,10 +310,10 @@ exports.modifyUser = functions.firestore.document('users/{userID}').onUpdate((ev
 })
 
 
-exports.modifyUserGroupMembership = functions.firestore.document('users/{userID}/groups/{groupID}').onUpdate((event) => {
-    var userID = event.params.userID;
-    var groupID = event.params.groupID;
-    var groupCustData = event.data.data();
+exports.modifyUserGroupMembership = functions.firestore.document('users/{userID}/groups/{groupID}').onUpdate((data,context) => {
+    var userID = context.params.userID;
+    var groupID = context.params.groupID;
+    var groupCustData = data.after.data();
     var groupOrder = []
     var docRef = db.collection('users').doc(userID)
     db.runTransaction(function (transaction) {
@@ -342,10 +330,10 @@ exports.modifyUserGroupMembership = functions.firestore.document('users/{userID}
     return;
 })
 
-exports.deleteUserGroupMembership = functions.firestore.document('users/{userID}/groups/{groupID}').onDelete((event) => {
-    var userID = event.params.userID;
-    var groupID = event.params.groupID;
-    var groupCustData = event.data.previous.data();
+exports.deleteUserGroupMembership = functions.firestore.document('users/{userID}/groups/{groupID}').onDelete((data,context) => {
+    var userID = context.params.userID;
+    var groupID = context.params.groupID;
+    var groupCustData = data.before.data();
     var groupOrder = []
     var docRef = db.collection('users').doc(userID)
     db.runTransaction(function (transaction) {
@@ -360,8 +348,8 @@ exports.deleteUserGroupMembership = functions.firestore.document('users/{userID}
     return true;
 })
 
-exports.joinRequest = functions.firestore.document('joinRequests/{requestID}').onWrite(event=>{
-    var fields = event.data.data();
+exports.joinRequest = functions.firestore.document('joinRequests/{requestID}').onWrite((data,context)=>{
+    var fields = data.after.data();
     var uid = fields.uid;
     var code = fields.code;
     db.collection('Group').where("joinCode.code","==",code).get().then(doc=>{
@@ -371,8 +359,8 @@ exports.joinRequest = functions.firestore.document('joinRequests/{requestID}').o
 })
 // *************************************** AUTH Functions
 
-exports.newUsr = functions.auth.user().onCreate(event=>{
-    const user = event.data;
+exports.newUsr = functions.auth.user().onCreate((data,context)=>{
+    const user = data.after.data();
     db.collection("users").doc((user.uid)).set({
         userid: user.uid,
         email: user.email,
