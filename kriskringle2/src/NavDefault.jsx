@@ -5,9 +5,8 @@ import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
 import Button from '@material-ui/core/Button';
-import IconButton from '@material-ui/core/IconButton';
-import MenuIcon from '@material-ui/icons/Menu';
 import 'typeface-roboto'
+import { Slide } from '@material-ui/core';
 
 const styles = {
     root: {
@@ -29,11 +28,9 @@ function DefaultAppBar(props) {
     }
     return (
         <div className={classes.root}>
+        <Slide direction="down" in={true}>
             <AppBar position="static" color="primary">
                 <Toolbar>
-                    <IconButton className={classes.menuButton} color="inherit" aria-label="Menu">
-                        <MenuIcon />
-                    </IconButton>
                     <div className={classes.flex}>
                         <Typography variant="title" color="inherit">
                             Secret Santa
@@ -44,6 +41,7 @@ function DefaultAppBar(props) {
                     Sign in</Typography></Button>
                 </Toolbar>
             </AppBar>
+            </Slide>
         </div>
     );
 }

@@ -10,6 +10,7 @@
     "react-dom": "^16.4.0",
     "react-firebaseui": "^3.0.4",
     "react-scripts": "1.1.4",
+    "react-transition-group": "^2.4.0",
     "typeface-roboto": "0.0.54"
   },
   "scripts": {

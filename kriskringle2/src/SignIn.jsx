@@ -14,11 +14,9 @@ class SignInWidget extends Component {
             firebase.auth.GoogleAuthProvider.PROVIDER_ID,
             firebase.auth.FacebookAuthProvider.PROVIDER_ID,
             firebase.auth.EmailAuthProvider.PROVIDER_ID,
-        
         ]
     };
     render() {
-        const {classes} = this.props;
         let authUI
         if(this.props.visible){
             authUI = <FirebaseAuth uiConfig={this.uiConfig} firebaseAuth={firebase.auth()} />
