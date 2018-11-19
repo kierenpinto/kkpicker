@@ -26,10 +26,17 @@ export class UserDB {
         this.auth = firebase.auth().onAuthStateChanged(user=>{
             if(user){
                 this.user = user;
+                this.name = user.displayName;
+                this.photo = user.photoURL;
+                this.email = user.email;
             }
         })
     }
     sync(){
-        this.db.collection('users').document(this.user.uid)
+        this.user.updateProfile({
+            displayName: this.name,
+            email: this.email,
+        })
+        // this.db.collection('users').document(this.user.uid).onSnapShotChange
     }
 }

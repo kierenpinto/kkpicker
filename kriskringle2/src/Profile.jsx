@@ -34,7 +34,9 @@ class Profile extends Component {
     handleClose = () => this.props.showProfileModal(false)
     render() {
         const { classes } = this.props;
-        console.log(this.props.user.photoURL);
+        var userDB=this.props.userDB;
+        let name = userDB.name;
+        let email = userDB.email;
         return (
             <Grid container justify="center">
                 <Grid item xs={12} justify="center">
@@ -50,11 +52,11 @@ class Profile extends Component {
                                         <Grid item>
                                             <FormControl className={classes.formControl}>
                                                 <InputLabel htmlFor="name-simple">Display Name</InputLabel>
-                                                <Input id="name-simple" />
+                                                <Input id="name-simple" value={name}/>
                                             </FormControl></Grid><Grid item>
                                             <FormControl className={classes.formControl}>
                                                 <InputLabel htmlFor="name-simple">Email</InputLabel>
-                                                <Input id="name-simple" />
+                                                <Input id="name-simple" value={email}/>
                                             </FormControl>
                                         </Grid></Grid>
                                 </CardContent>

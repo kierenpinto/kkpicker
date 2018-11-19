@@ -52,10 +52,10 @@ class App extends Component {
     this.state = {
       firebase: props.firebase,
       userAuth: false,
+      userDB: new UserDB(props.firebase),
       SignInVisible: false,
       showContent: false,
       profileanchorEl: null,
-      userProfile: new UserDB(props.firebase),
       profileModalVisible: false,
     }
     firebase.auth().onAuthStateChanged(
@@ -87,7 +87,7 @@ class App extends Component {
         <UserAppBar user={this.state.userAuth} firebase={this.state.firebase} showProfileModal={this.showProfileModal}></UserAppBar>
       )
       if (this.state.profileModalVisible) {
-        view = (<Profile showProfileModal={this.showProfileModal} user={this.state.userAuth} />)
+        view = (<Profile showProfileModal={this.showProfileModal} userDB = {this.state.userDB} user={this.state.userAuth} />)
       }
       else {
         view = (<GroupView firebase={this.state.firebase} />)
