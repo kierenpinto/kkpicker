@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import './App.css';
-import DefaultAppBar from './NavDefault.jsx'
-import UserAppBar from './NavUser.jsx'
+import DefaultAppBar from './Navigation/NavDefault.jsx'
+import UserAppBar from './Navigation/NavUser.jsx'
 import * as firebase from 'firebase';
 import SignInWidget from './SignIn.jsx';
 import PropTypes from 'prop-types';
@@ -9,11 +9,12 @@ import { withStyles } from '@material-ui/core/styles';
 import Paper from '@material-ui/core/Paper';
 import Grid from '@material-ui/core/Grid';
 import CircularProgress from '@material-ui/core/CircularProgress';
-import GroupView from './GroupView';
+import GroupView from './MainView/GroupView/GroupView';
+import Fab from '@material-ui/core/Fab';
 import AddIcon from '@material-ui/icons/Add';
-import Button from '@material-ui/core/Button';
+import CloseIcon from '@material-ui/icons/Close';
 import { GroupsDB, UserDB } from './Interface';
-import Profile from './Profile';
+import Profile from './MainView/Profile';
 import { Slide } from '@material-ui/core';
 
 const styles = theme => ({
@@ -57,22 +58,28 @@ class App extends Component {
       showContent: false,
       profileanchorEl: null,
       profileModalVisible: false,
+      groupMode:'view', // GroupMode can be view or add
     }
     firebase.auth().onAuthStateChanged(
       (user) => this.changeAuthState(user))
     this.showSignIn = this.showSignIn.bind(this);
     this.changeAuthState = this.changeAuthState.bind(this);
     this.showProfileModal = this.showProfileModal.bind(this);
+    this.addGroupHandler = this.addGroupHandler.bind(this);
   }
   changeAuthState(user) {
     this.setState({ userAuth: user, showContent: true });
     if (!!user) { this.setState({ SignInVisible: false }) }
   }
   showSignIn() {
+    // Shows sign in dialog box
     this.setState({ SignInVisible: true });
   }
   showProfileModal(bool) {
     this.setState({ profileModalVisible: bool })
+  }
+  addGroupHandler(){
+    this.setState({groupMode:'add'})
   }
   render() {
     const { classes } = this.props;
@@ -82,28 +89,41 @@ class App extends Component {
     let appbar = null;
     let content = null;
     let view = null;
-    if (this.state.userAuth) { // Signed In State
+    if (this.state.userAuth) { 
+      // Show views restricted to an authenticated user
       appbar = (
+        // Render Top App Bar
         <UserAppBar user={this.state.userAuth} firebase={this.state.firebase} showProfileModal={this.showProfileModal}></UserAppBar>
       )
-      if (this.state.profileModalVisible) {
+      // Check whether to show profile view or to display normal groups view
+      if (this.state.profileModalVisible) { 
+        // Show profile modal
         view = (<Profile showProfileModal={this.showProfileModal} userDB = {this.state.userDB} user={this.state.userAuth} />)
       }
       else {
-        view = (<GroupView firebase={this.state.firebase} />)
+        // Show normal groups view
+        view = (<GroupView firebase={this.state.firebase} mode={this.state.groupMode}/>)
+      }
+      let fabIcon = (<div></div>);
+      if (this.state.groupMode == 'view'){
+        fabIcon = (<AddIcon/>)
+      }
+      else if(this.state.groupMode == 'add'){
+        fabIcon = (<CloseIcon/>) 
       }
       content = (
         <div className={classes.content}>
-          {view}
+          {view /*display view in here */}
           <Slide direction='left' in={true}>
-            <Button variant="fab" color="primary" aria-label="add" className={classes.fab}>
-              <AddIcon />
-            </Button>
+            <Fab color = "primary" aria-label="Add" className={classes.fab} onClick={this.addGroupHandler}>
+              {fabIcon}
+            </Fab>
           </Slide>
         </div>
       )
     }
-    else { // Not Signed In State
+    else { 
+      // Show views that an non-authenticated visitor will see - namely prompt to sign in.
       appbar = (<div><DefaultAppBar showSignIn={this.showSignIn}></DefaultAppBar>
         <Grid container justify="center">
           <Grid item>
@@ -138,8 +158,8 @@ class App extends Component {
     }
   }
 }
-App.PropTypes = {
-  classes: PropTypes.object.isRequired,
+App.propTypes = {
+  classes: PropTypes.object.isRequired
 }
 
 export default withStyles(styles)(App);

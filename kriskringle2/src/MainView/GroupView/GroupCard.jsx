@@ -5,6 +5,7 @@ import CardActions from '@material-ui/core/CardActions';
 import CardContent from '@material-ui/core/CardContent';
 import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
+import { Zoom } from '@material-ui/core';
 const styles = theme => ({
     card: {
         color: theme.palette.text.secondary,
@@ -27,7 +28,10 @@ class GroupCard extends Component {
     render() {
         const {classes} = this.props;
         return (
+            <Zoom in={true}>
+            <div>
                 <Card className={classes.card}>
+
                     <CardContent>
                         <Typography variant="headline" component="h2">
                             Group Name
@@ -36,13 +40,15 @@ class GroupCard extends Component {
                             Date
                         </Typography>
                         <Typography component="p">
-                        Partner is: Briana
+                        You must get a gift for Big Shaq
                         </Typography>
                     </CardContent>
                     <CardActions>
                         <Button size="small">View</Button>
                     </CardActions>
                 </Card>
+                </div> 
+                    </Zoom>
         )
     }
 }

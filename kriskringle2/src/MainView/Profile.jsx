@@ -44,7 +44,7 @@ class Profile extends Component {
                         <Zoom in={true}>
                             <Card className={classes.card}>
                                 <CardContent>
-                                    <Typography variant="title" id="modal-title">
+                                    <Typography variant="h5" component="h2" variant="title" id="modal-title">
                                         Profile</Typography>
                                     <Typography variant="subheading" id="simple-modal-description">
                                         Edit your profile</Typography>

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/core/styles';
 import Grid from '@material-ui/core/Grid';
 import GroupCard from './GroupCard';
-import { Zoom } from '@material-ui/core';
+import GroupAdd from './GroupAdd';
 
 const styles = theme => ({
     root: {
@@ -27,20 +27,38 @@ const styles = theme => ({
 
 
 class GroupView extends Component{
-
+  
   render(){
-        const {classes} = this.props;
+        const {classes,mode} = this.props;
+        let cards;
+        //Choose View or Add
+        if (mode == 'view'){
+          cards = (
+            <div>
+              <div className={classes.groupCardSurround}>
+                <GroupCard />
+              </div>
+              <div className={classes.groupCardSurround}>
+                <GroupCard />
+              </div>
+            </div>
+            )
+        }else if(mode == 'add'){
+          cards = (<div>
+              <div className={classes.groupCardSurround}>
+                <GroupAdd />
+              </div>
+          </div>)
+        }else{
+          cards = (<div></div>)
+        }
         return(
           <div className={classes.root}>
             <Grid container>
             <Grid item xs={12}>
               {/* <Grid container justify="center">
                 <Grid item> */}
-                <Zoom in={true}>
-                  <div className={classes.groupCardSurround}>
-                    <GroupCard />
-                    </div>
-                </Zoom>
+                {cards}
                 {/* </Grid>
               </Grid> */}
             </Grid> 
@@ -49,7 +67,7 @@ class GroupView extends Component{
         )
     }
 }
-GroupView.PropTypes = {
+GroupView.propTypes = {
     classes: PropTypes.object.isRequired,
   }
 
