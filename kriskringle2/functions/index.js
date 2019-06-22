@@ -84,16 +84,3 @@ exports.createGroup = functions.https.onCall((data, context) => {
     );
     return g;
 })
-
-exports.tcg = functions.https.onCall((data,context) =>{
-    let userid = "wg5KBhztfTUdfuS6YQkbWjXqTaT2";
-    let groupName = data.groupName;
-    let g = db.collection('groups').add({ name: groupName }).then(docref => {
-        groupid = docref.id;
-        addGroupMembers(groupid, userid, true)
-        return true
-    }).catch((err)=>{        
-    console.error("An error occured with createGroup function" + err)}
-    );
-    return g; 
-})
