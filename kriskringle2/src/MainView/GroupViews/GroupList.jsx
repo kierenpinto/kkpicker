@@ -29,7 +29,7 @@ const styles = theme => ({
 class GroupList extends Component{
   
   render(){
-        const {classes,mode} = this.props;
+        let {classes,mode,firebase} = this.props;
         let cards;
         //Choose View or Add
         if (mode == 'view'){
@@ -46,7 +46,7 @@ class GroupList extends Component{
         }else if(mode == 'add'){
           cards = (<div>
               <div className={classes.groupCardSurround}>
-                <GroupAdd />
+                <GroupAdd firebase={firebase}/>
               </div>
           </div>)
         }else{

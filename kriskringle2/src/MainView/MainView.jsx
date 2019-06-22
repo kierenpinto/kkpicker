@@ -13,7 +13,7 @@ const styles = (theme) => ({
 class MainView extends Component {
     constructor(props) {
         super(props)
-        this.state = {groupMode:false}
+        this.state = {groupMode:false, firebase:props.appObj.state.firebase}
         this.viewGroups = this.viewGroups.bind(this);
         this.addGroup = this.addGroup.bind(this);
     }

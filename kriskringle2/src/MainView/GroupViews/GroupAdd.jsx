@@ -27,19 +27,32 @@ const styles = theme => ({
 });
 
 class GroupAdd extends Component {
-    constructor(props){
+    constructor(props) {
         super(props);
-        this.state = {value: ''};
+        this.state = { groupName: "" };
+        this.state.firebase = this.props.firebase;
         this.handleChangeName = this.handleChangeName.bind(this);
+        this.handleAddGroup = this.handleAddGroup.bind(this);
     }
-    handleChangeName(event){
-        this.setState({value: event.target.value});
+    handleChangeName(event) {
+        this.setState({ groupName: event.target.value });
     }
-    handleAddGroup(event){
-        alert('Group was added')
+    handleAddGroup(event) {
+
+        //let name = this.state.groupName;
+        let name = 'testgroup';
+        if (String(name).length > 0) {
+            alert('Group was sent')
+            let addMessage = this.state.firebase.functions().httpsCallable('createGroup');
+            addMessage({ groupName: name }).then(function (result) {
+                alert('Group was added')
+            })
+        }
     }
+
     render() {
         const { classes } = this.props;
+
         return (
             <Zoom in={true}>
                 <div>
@@ -60,7 +73,7 @@ class GroupAdd extends Component {
                             />
                         </CardContent>
                         <CardActions>
-                            <Button size="small">Save</Button>
+                            <Button size="small" onClick={this.handleAddGroup}>Save</Button>
                         </CardActions>
                     </Card>
                 </div>

@@ -1,3 +1,4 @@
+/* eslint-disable promise/always-return */
 const functions = require('firebase-functions');
 
 // // Create and Deploy Your First Cloud Functions
@@ -15,11 +16,11 @@ var groupscollection = db.collection('groups');
 exports.createUser = functions.auth.user().onCreate((userProfile) => {
     userid = userProfile.uid
     //Run this on first time - called by onCreate user hook
-    let userRef = db.collection('users').doc(this.id)
+    let userRef = db.collection('users').doc(userid)
     let data = {
         newUser: true,
         groups: [],
-        alias: this.userProfile.displayName
+        alias: userProfile.displayName
     }
     return userRef.set(data);
 })
@@ -40,26 +41,34 @@ function addGroupMembers(groupid, userid, admin_user) {
     // Add a group member
     userdocRef = userscollection.doc(userid)
     groupdocRef = groupscollection.doc(groupid)
-    let transaction = db.runTransaction(t => { // start transaction
-        t.getAll(userdocRef, groupdocRef).then(docs => {
+    return db.runTransaction(t => { // start transaction
+        return t.getAll(userdocRef, groupdocRef).then(docs => {
             var userdoc = docs[0]
             var groupdoc = docs[1]
             if (userdoc.exists && groupdoc.exists) {
-                let groups_array = userdoc.data.groups !== "undefined" ? userdoc.data.groups : [] //ensure existance
-                groups_array = Array.isArray(groups_array) ? groups_array : [groups_array] // ensure array
-                groups_array.push({ groupid: groupid })
-
-                let users_array = groupdoc.data.users !== "undefined" ? groupdoc.data.users : []
+                // Groups array is in the user's profile document
+                let userdata = userdoc.data()
+                let groupdata = groupdoc.data()
+                let groups_array = ("groups" in userdata) ?  userdata.groups : [] //ensure existance of group array
+                groups_array = Array.isArray(groups_array) ? groups_array : [groups_array] // ensure it is of array type
+                groups_array.push({ groupid: groupid, admin: admin_user,groupName: groupdata.name})
+                // Users array is in the group document
+                let users_array = ("users" in groupdata) ? groupdata.users: []
                 users_array = Array.isArray(users_array) ? users_array : [users_array]
-                users_array.push({ id: uid, groupName: groupname, admin: admin_user })
-                t.update(userdocRef, { groups: groups_array })
-                t.update(groupdocRef, { users: users_array })
+                users_array.push({ id: userid , username: userdata.alias , admin: admin_user })
+                // Update the user and group documents with the added group
+                t.update(userdocRef, { 'groups': groups_array })
+                t.update(groupdocRef, { 'users': users_array })
+                //t.update(groupdocRef, {'testfield':'testvalue'}) 
+            }else{
+                throw(Error("Either userdoc or groupdoc doesn't exist"));
             }
-            return
-        }).catch()
-    }).then(result => {
-        console.log('Transaction success!');
-        return
+        }).catch(err =>
+            {console.error(err)}
+        )
+   // }).then(result => {
+     //   console.log('Transaction success!');
+       // return
     }).catch(err => ('Transaction failure:', err));
 }
 
@@ -69,10 +78,22 @@ exports.createGroup = functions.https.onCall((data, context) => {
     let groupName = data.groupName;
     let g = db.collection('groups').add({ name: groupName }).then(docref => {
         groupid = docref.id;
-        addGroupMembers(groupid, userid, true)
-        return true
-    }).catch(
-        console.log("An error occured with createGroup function")
+        return addGroupMembers(groupid, userid, true)
+    }).catch((err)=>{        
+    console.error("An error occured with createGroup function" + err)}
     );
     return g;
+})
+
+exports.tcg = functions.https.onCall((data,context) =>{
+    let userid = "wg5KBhztfTUdfuS6YQkbWjXqTaT2";
+    let groupName = data.groupName;
+    let g = db.collection('groups').add({ name: groupName }).then(docref => {
+        groupid = docref.id;
+        addGroupMembers(groupid, userid, true)
+        return true
+    }).catch((err)=>{        
+    console.error("An error occured with createGroup function" + err)}
+    );
+    return g; 
 })
