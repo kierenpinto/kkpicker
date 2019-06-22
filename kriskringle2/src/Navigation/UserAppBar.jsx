@@ -43,7 +43,10 @@ class UserAppBar extends Component {
         this.SignOut = this.SignOut.bind(this);
         this.setDrawer = this.setDrawer.bind(this);
     }
-    showProfileModal = () => { this.props.showProfileModal(true); this.menuClose(); }
+    showProfileModal = () => { 
+        this.props.showProfileModal(true);
+        this.menuClose();
+    }
     menuClose = () => {
         this.setState({ anchorEl: null })
     }

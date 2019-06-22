@@ -26,7 +26,7 @@ const styles = theme => ({
   });
 
 
-class GroupView extends Component{
+class GroupList extends Component{
   
   render(){
         const {classes,mode} = this.props;
@@ -67,8 +67,8 @@ class GroupView extends Component{
         )
     }
 }
-GroupView.propTypes = {
+GroupList.propTypes = {
     classes: PropTypes.object.isRequired,
   }
 
-export default withStyles(styles)(GroupView);
+export default withStyles(styles)(GroupList);

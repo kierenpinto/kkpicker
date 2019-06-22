@@ -1,8 +1,10 @@
 import FirebaseAuth from 'react-firebaseui/FirebaseAuth';
 import React, { Component } from 'react';
 import * as firebase from 'firebase';
+import { withStyles } from '@material-ui/core';
 
-class SignInWidget extends Component {
+const styles = theme => ({})
+class SignIn extends Component {
     uiConfig = {
         // Popup signin flow rather than redirect flow.
         signInFlow: 'popup',
@@ -17,17 +19,10 @@ class SignInWidget extends Component {
         ]
     };
     render() {
-        let authUI
-        if(this.props.visible){
-            authUI = <FirebaseAuth uiConfig={this.uiConfig} firebaseAuth={firebase.auth()} />
-        }
-        else{authUI = <p>Welcome to Secret Santa! Sign in required.</p>}
         return (
-            <div>
-                {authUI}
-            </div>
+            <FirebaseAuth uiConfig={this.uiConfig} firebaseAuth={firebase.auth()} />
         );
     }
 }
 
-export default SignInWidget;
+export default withStyles(styles)(SignIn);

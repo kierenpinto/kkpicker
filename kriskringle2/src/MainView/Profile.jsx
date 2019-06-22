@@ -31,7 +31,7 @@ const styles = theme => ({
 })
 
 class Profile extends Component {
-    handleClose = () => this.props.showProfileModal(false)
+    handleClose = () => this.props.closeProfileModal()
     render() {
         const { classes } = this.props;
         var userDB=this.props.userDB;

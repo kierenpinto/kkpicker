@@ -29,7 +29,7 @@ const styles = theme => ({
 class GroupAdd extends Component {
     constructor(props){
         super(props);
-        this.state = {value: 'sup'};
+        this.state = {value: ''};
         this.handleChangeName = this.handleChangeName.bind(this);
     }
     handleChangeName(event){
@@ -60,7 +60,7 @@ class GroupAdd extends Component {
                             />
                         </CardContent>
                         <CardActions>
-                            <Button size="small">View</Button>
+                            <Button size="small">Save</Button>
                         </CardActions>
                     </Card>
                 </div>
