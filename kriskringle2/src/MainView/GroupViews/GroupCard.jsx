@@ -26,7 +26,7 @@ const styles = theme => ({
 
 class GroupCard extends Component {
     render() {
-        const {classes} = this.props;
+        const {classes, group_data} = this.props;
         return (
             <Zoom in={true}>
             <div>
@@ -34,7 +34,7 @@ class GroupCard extends Component {
 
                     <CardContent>
                         <Typography variant="headline" component="h2">
-                            Group Name
+                            {group_data.groupName}
                         </Typography>
                         <Typography className={classes.pos} color="textSecondary">
                             Date

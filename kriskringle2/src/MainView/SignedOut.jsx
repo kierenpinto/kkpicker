@@ -36,9 +36,6 @@ const styles = theme => ({
     }
   });
 class SignedOut extends Component {
-    constructor(props) {
-        super(props);
-    }
     render() {
         let {classes} = this.props
         return (

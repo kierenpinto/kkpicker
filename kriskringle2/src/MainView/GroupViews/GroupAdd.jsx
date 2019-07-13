@@ -38,10 +38,8 @@ class GroupAdd extends Component {
         this.setState({ groupName: event.target.value });
     }
     handleAddGroup(event) {
-
-        //let name = this.state.groupName;
-        let name = 'testgroup';
-        if (String(name).length > 0) {
+        let name = String(this.state.groupName);
+        if (name.length > 0) {
             alert('Group was sent')
             let addMessage = this.state.firebase.functions().httpsCallable('createGroup');
             addMessage({ groupName: name }).then(function (result) {
@@ -57,24 +55,25 @@ class GroupAdd extends Component {
             <Zoom in={true}>
                 <div>
                     <Card className={classes.card}>
-
-                        <CardContent>
-                            <Typography variant="headline" component="h2">
-                                Add a new group
-                        </Typography>
-                            <TextField
-                                id="outlined-name"
-                                label="Name"
-                                className={classes.textField}
-                                value={this.state.value}
-                                onChange={this.handleChangeName}
-                                margin="normal"
-                                variant="outlined"
-                            />
-                        </CardContent>
-                        <CardActions>
-                            <Button size="small" onClick={this.handleAddGroup}>Save</Button>
-                        </CardActions>
+                        <form>
+                            <CardContent>
+                                <Typography variant="headline" component="h2">
+                                    Add a new group
+                                </Typography>
+                                <TextField
+                                    id="outlined-name"
+                                    label="Name"
+                                    className={classes.textField}
+                                    value={this.state.value}
+                                    onChange={this.handleChangeName}
+                                    margin="normal"
+                                    variant="outlined"
+                                />
+                            </CardContent>
+                            <CardActions>
+                                <Button size="small" onClick={this.handleAddGroup}>Save</Button>
+                            </CardActions>
+                        </form>
                     </Card>
                 </div>
             </Zoom>

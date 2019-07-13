@@ -27,23 +27,34 @@ const styles = theme => ({
 
 
 class GroupList extends Component{
-  
+  constructor(props){
+    super(props)
+    this.state = {
+      group_array: []
+    }
+  }
   render(){
-        let {classes,mode,firebase} = this.props;
+        let {classes,mode,firebase,uid} = this.props;
+        let db = firebase.firestore();
+        let userdoc = db.collection("users").doc(uid);
         let cards;
         //Choose View or Add
-        if (mode == 'view'){
+        if (mode === 'view'){
+          userdoc.onSnapshot((doc)=>{
+            let group_array = doc.data().groups
+            this.setState({'group_array':group_array})
+          })
+          let groupList = this.state.group_array.map((group) =>
+            <div className={classes.groupCardSurround}>
+            <GroupCard group_data={group}/>
+          </div>
+          )
           cards = (
             <div>
-              <div className={classes.groupCardSurround}>
-                <GroupCard />
-              </div>
-              <div className={classes.groupCardSurround}>
-                <GroupCard />
-              </div>
+                {groupList}
             </div>
             )
-        }else if(mode == 'add'){
+        }else if(mode === 'add'){
           cards = (<div>
               <div className={classes.groupCardSurround}>
                 <GroupAdd firebase={firebase}/>

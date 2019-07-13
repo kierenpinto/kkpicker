@@ -13,7 +13,8 @@ let firebase_config = {
     storageBucket: "kkpicker2.appspot.com",
     messagingSenderId: "181362656557"
   }
-  let app =firebase.initializeApp(firebase_config);
+  //let app =firebase.initializeApp(firebase_config);
+  firebase.initializeApp(firebase_config);
   /* TURN OFF FOR PRODUCTION */
   //app.functions().useFunctionsEmulator("http://localhost:5001/")
 ReactDOM.render(<App firebase={firebase}/>, document.getElementById('root'));

@@ -36,14 +36,14 @@ class MainView extends Component {
             let buttonStyleList = {'ViewGroups':'add','AddGroup':'close'}
             return (
                 <div className={classes.content}>
-                    <GroupList firebase={this.state.firebase} mode={modeList[MainViewMode]} />
+                    <GroupList uid={appObj.state.userAuth.uid}firebase={this.state.firebase} mode={modeList[MainViewMode]} />
                     <Slide direction='left' in={true}>
                         <FAButton type={buttonStyleList[MainViewMode]} action={buttonActionList[MainViewMode]}></FAButton>
                     </Slide>
                 </div>
             )
         }
-        else if (MainViewMode == 'Profile') {
+        else if (MainViewMode === 'Profile') {
             //show profile view
             return (
                 <div className={classes.content}>

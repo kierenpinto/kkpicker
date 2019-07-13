@@ -26,7 +26,7 @@ class AppBar extends Component{
       this.props.appObj.changeMainViewMode('Profile')
     }
     render(){
-        let {appObj, classes} = this.props;
+        let {appObj} = this.props;
         if (appObj.state.userAuth) {
             // Show views restricted to an authenticated user
             return (

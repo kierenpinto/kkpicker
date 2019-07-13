@@ -22,10 +22,10 @@ class FAButton extends Component {
     render(){
         let {type, classes} = this.props;
         let fabIcon = (<div></div>);
-        if (type == 'add') {
+        if (type === 'add') {
           fabIcon = (<AddIcon />)
         }
-        else if (type == 'close' ||type == 'close') {
+        else if (type === 'close' ||type === 'close') {
           fabIcon = (<CloseIcon />)
         }
         return(
