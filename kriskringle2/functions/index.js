@@ -84,3 +84,47 @@ exports.createGroup = functions.https.onCall((data, context) => {
     );
     return g;
 })
+
+exports.addGroupMember = functions.https.onCall((data,context) =>
+{
+    let session_uid = context.auth.uid;
+    let group_id = data.groupid;
+    let member_uid = data.member_uid
+})
+
+exports.removeGroupMember = functions.https.onCall((data,context) =>
+{
+    let session_uid = context.auth.uid;
+    let group_id = data.groupid;
+    let member_uid = data.member_uid;
+    //Check for admin privileges
+    //Disable pair groupings - delete pairs
+    //Remove user
+    //Enable pair groupings - new pairs
+})
+
+exports.renameGroup = functions.https.onCall((data,context) => {
+    let session_uid = context.auth.uid;
+    let group_id = data.groupid;
+    //Check for admin privileges
+    //Change Group Name in Group doc
+    // let g = db.collection('groups').get(group_id).then((doc)=> {
+    //     if (doc.exists){
+    //         //Iterate over all users and change group name
+    //         let users = doc.data().users;
+    //         users.forEach(user => {
+    //             db.collection('users').get(user.id)
+    //         });
+    //     }
+    // })
+    // return g;
+})
+
+exports.pairGroup = functions.https.onCall((data,context) => {
+    let session_uid = context.auth.uid;
+    let group_id = data.groupid;
+    let member_uid = data.member_uid;
+    //Check for admin privileges
+    //Change Group Name in Group doc
+    //Iterate over all users and change group name
+})
