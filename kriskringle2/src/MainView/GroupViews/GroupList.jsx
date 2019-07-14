@@ -30,29 +30,35 @@ class GroupList extends Component{
   constructor(props){
     super(props)
     this.state = {
-      group_array: []
+      groups: new Map()
     }
   }
+  componentDidMount(){
+    let {firebase, uid} = this.props;
+    let db = firebase.firestore();
+    let userdoc = db.collection("users").doc(uid);
+    userdoc.onSnapshot((doc)=>{ // When user document updates
+      let groups = new Map(Object.entries((doc.data().groups))) // Grab groups field and put into Map Object
+      this.setState({'groups':groups}) // Call set state to update groups array
+    })
+  }
   render(){
-        let {classes,mode,firebase,uid} = this.props;
-        let db = firebase.firestore();
-        let userdoc = db.collection("users").doc(uid);
+        let {classes,mode,firebase} = this.props;
         let cards;
         //Choose View or Add
         if (mode === 'view'){
-          userdoc.onSnapshot((doc)=>{
-            let group_array = doc.data().groups
-            this.setState({'group_array':group_array})
-          })
-          let groupList = this.state.group_array.map((group) =>
+          let groupList = []
+          this.state.groups.forEach((group) => {// Render each group in the array and put it in groupList
+            groupList.push(
             <div className={classes.groupCardSurround}>
-            <GroupCard group_data={group}/>
-          </div>
-          )
-          cards = (
-            <div>
-                {groupList}
+              <GroupCard group_data={group}/>
             </div>
+            )
+          })
+          cards = (
+            <React.Fragment>
+                {groupList}
+            </React.Fragment>
             )
         }else if(mode === 'add'){
           cards = (<div>

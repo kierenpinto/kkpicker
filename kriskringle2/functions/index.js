@@ -47,28 +47,23 @@ function addGroupMembers(groupid, userid, admin_user) {
             var groupdoc = docs[1]
             if (userdoc.exists && groupdoc.exists) {
                 // Groups array is in the user's profile document
-                let userdata = userdoc.data()
-                let groupdata = groupdoc.data()
-                let groups_array = ("groups" in userdata) ?  userdata.groups : [] //ensure existance of group array
-                groups_array = Array.isArray(groups_array) ? groups_array : [groups_array] // ensure it is of array type
-                groups_array.push({ groupid: groupid, admin: admin_user,groupName: groupdata.name})
-                // Users array is in the group document
-                let users_array = ("users" in groupdata) ? groupdata.users: []
-                users_array = Array.isArray(users_array) ? users_array : [users_array]
-                users_array.push({ id: userid , username: userdata.alias , admin: admin_user })
+                let userdata = userdoc.data();
+                let groupdata = groupdoc.data();
+                let group_map = { groupid: groupid, admin: admin_user,groupName: groupdata.name};
+                let user_map = { id: userid ,username: userdata.alias , admin: admin_user };
+                let user_ref = 'groups.' + groupid;
+                let group_ref = 'users.' + userid;
                 // Update the user and group documents with the added group
-                t.update(userdocRef, { 'groups': groups_array })
-                t.update(groupdocRef, { 'users': users_array })
-                //t.update(groupdocRef, {'testfield':'testvalue'}) 
+                t.update(userdocRef, { [user_ref] : group_map })
+                t.update(groupdocRef, { [group_ref] : user_map })
+
+
             }else{
                 throw(Error("Either userdoc or groupdoc doesn't exist"));
             }
         }).catch(err =>
             {console.error(err)}
         )
-   // }).then(result => {
-     //   console.log('Transaction success!');
-       // return
     }).catch(err => ('Transaction failure:', err));
 }
 
