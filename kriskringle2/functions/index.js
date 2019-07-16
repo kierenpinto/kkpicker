@@ -90,7 +90,7 @@ exports.addGroupMember = functions.https.onCall((data,context) =>
 exports.removeGroupMember = functions.https.onCall((data,context) =>
 {
     let session_uid = context.auth.uid;
-    let group_id = data.groupid;
+    let group_id = data.groupID;
     let member_uid = data.member_uid;
     //Check for admin privileges
     //Disable pair groupings - delete pairs
@@ -98,21 +98,30 @@ exports.removeGroupMember = functions.https.onCall((data,context) =>
     //Enable pair groupings - new pairs
 })
 
-exports.renameGroup = functions.https.onCall((data,context) => {
-    let session_uid = context.auth.uid;
-    let group_id = data.groupid;
-    //Check for admin privileges
-    //Change Group Name in Group doc
-    // let g = db.collection('groups').get(group_id).then((doc)=> {
-    //     if (doc.exists){
-    //         //Iterate over all users and change group name
-    //         let users = doc.data().users;
-    //         users.forEach(user => {
-    //             db.collection('users').get(user.id)
-    //         });
-    //     }
-    // })
-    // return g;
+exports.renameGroup = functions.https.onCall((data, context) => {
+    const session_uid = context.auth.uid;
+    const group_id = data.groupID;
+    const new_name = data.groupName;
+    const groupsDocRef = groupscollection.doc(group_id);
+    return db.runTransaction((transaction) => {
+        return transaction.get(groupsDocRef).then( (groupDoc) =>{
+            if (groupDoc.exists) {
+                let data = groupDoc.data();
+                if (data.users[session_uid].admin === true) {
+                    //Iterate over all users and change group name
+                    let users = new Map(Object.entries(data.users)); // Must convert from Object to map so it is iteratble
+                    users.forEach(user => {
+                        const userDocRef = db.collection('users').doc(user.id)
+                        // transaction.update(userDocRef, {groups:{[group_id]: {'groupName': new_name }}})
+                        let user_ref = `groups.${group_id}.groupName`
+                        transaction.update(userDocRef,{[user_ref]:new_name})
+                    });
+                    //Change Group Name in Group doc
+                    transaction.update(groupsDocRef,{'name':new_name})
+                }
+            }
+        })
+    })
 })
 
 exports.pairGroup = functions.https.onCall((data,context) => {

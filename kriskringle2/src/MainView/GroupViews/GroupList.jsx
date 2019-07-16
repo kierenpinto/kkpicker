@@ -38,7 +38,7 @@ class GroupList extends Component {
     let db = firebase.firestore();
     let userdoc = db.collection("users").doc(uid);
     userdoc.onSnapshot((doc) => { // When user document updates
-      let groups = new Map(Object.entries((doc.data().groups))) // Grab groups field and put into Map Object
+      let groups = new Map(Object.entries((doc.data().groups))) // Grab groups field from user document and put into Map Object
       this.setState({ 'groups': groups }) // Call set state to update groups array
     })
   }
@@ -51,7 +51,7 @@ class GroupList extends Component {
       this.state.groups.forEach((group) => {// Render each group in the array and put it in groupList
         groupList.push(
           <div className={classes.groupCardSurround}>
-            <GroupCard group_data={group} />
+            <GroupCard group_data={group} firebase={firebase}/>
           </div>
         )
       })

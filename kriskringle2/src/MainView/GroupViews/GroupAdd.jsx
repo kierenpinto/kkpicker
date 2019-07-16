@@ -7,6 +7,8 @@ import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
 import { Zoom } from '@material-ui/core';
 import TextField from '@material-ui/core/TextField';
+import DoneIcon from '@material-ui/icons/Done'
+import CircularProgress from '@material-ui/core/CircularProgress';
 
 const styles = theme => ({
     card: {
@@ -31,6 +33,7 @@ class GroupAdd extends Component {
         super(props);
         this.state = { groupName: "" };
         this.state.firebase = this.props.firebase;
+        this.state.submissionState = false;
         this.handleChangeName = this.handleChangeName.bind(this);
         this.handleAddGroup = this.handleAddGroup.bind(this);
     }
@@ -40,17 +43,30 @@ class GroupAdd extends Component {
     handleAddGroup(event) {
         let name = String(this.state.groupName);
         if (name.length > 0) {
-            alert('Group was sent')
+            //alert('Group was sent')
+            this.setState({submissionState: "processing"})
             let addMessage = this.state.firebase.functions().httpsCallable('createGroup');
-            addMessage({ groupName: name }).then(function (result) {
-                alert('Group was added')
+            addMessage({ groupName: name }).then( (result) =>{
+                // alert('Group was added')
+                this.setState({submissionState: "complete"})
             })
         }
     }
 
     render() {
         const { classes } = this.props;
-
+        let completionIcon
+        switch (this.state.submissionState) {
+            case "processing":
+                completionIcon = (<CircularProgress/>)
+                break;
+            case "complete":
+                completionIcon  = (<DoneIcon/>)
+                break;
+            default:
+                completionIcon = (<React.Fragment></React.Fragment>)
+                break;
+        }
         return (
             <Zoom in={true}>
                 <div>
@@ -68,7 +84,7 @@ class GroupAdd extends Component {
                                     onChange={this.handleChangeName}
                                     margin="normal"
                                     variant="outlined"
-                                />
+                                />{completionIcon}
                             </CardContent>
                             <CardActions>
                                 <Button size="small" onClick={this.handleAddGroup}>Save</Button>
