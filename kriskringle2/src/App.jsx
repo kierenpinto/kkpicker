@@ -17,7 +17,7 @@ const styles = theme => ({
     flexGrow: 1,
   },
   paper: {
-    padding: theme.spacing.unit * 2,
+    padding: theme.spacing(2),
     textAlign: 'center',
     color: theme.palette.text.secondary,
     margin: 25,
@@ -25,17 +25,17 @@ const styles = theme => ({
     minWidth: 350
   },
   progress: {
-    margin: theme.spacing.unit * 2,
+    margin: theme.spacing(2),
   },
   group_card: {
     margin: 25,
     maxWidth: 400
   },
   fab: {
-    margin: theme.spacing.unit,
+    margin: theme.spacing(),
     position: 'fixed',
-    bottom: theme.spacing.unit * 6,
-    right: theme.spacing.unit * 6,
+    bottom: theme.spacing(6),
+    right: theme.spacing(6),
   },
   content: {
     marginTop: 56,
@@ -76,8 +76,8 @@ class App extends Component {
     if (!this.state.showContent) {
       return (
         <div>
-          <Grid container justify="center">
-            <Grid item alignItems={'center'} alignContent={'center'}>
+          <Grid container justify="center" alignContent='center' alignItems={'center'}>
+            <Grid item>
               <div className={classes.paper}><CircularProgress className={classes.progress} /></div>
             </Grid>
           </Grid>

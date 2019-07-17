@@ -5,10 +5,10 @@ import CloseIcon from '@material-ui/icons/Close';
 import { withStyles } from "@material-ui/core/styles";
 const styles = (theme) => ({
     fab: {
-        margin: theme.spacing.unit,
+        margin: theme.spacing(6),
         position: 'fixed',
-        bottom: theme.spacing.unit * 6,
-        right: theme.spacing.unit * 6,
+        bottom: theme.spacing(6),
+        right: theme.spacing(6),
     }
 });
 class FAButton extends Component {

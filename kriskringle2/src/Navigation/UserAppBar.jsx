@@ -15,7 +15,7 @@ import MainDrawer from './Drawer';
 import { Slide } from '@material-ui/core';
 import Avatar from '@material-ui/core/Avatar';
 
-const styles = {
+const styles = (theme) => ({
     root: {
         flexGrow: 1,
     },
@@ -29,8 +29,9 @@ const styles = {
     avatar: {
         margin: 5,
     },
+    toolbar: theme.mixins.toolbar
 
-};
+});
 
 class UserAppBar extends Component {
     constructor(props) {
@@ -82,12 +83,12 @@ class UserAppBar extends Component {
         return (
             <div className={classes.root}>
                 <Slide direction="down" in={true}>
-                    <AppBar position="fixed" color="primary">
+                    <AppBar position="static" color="primary">
                         <Toolbar>
                             <IconButton onClick={setDrawer(true)} className={classes.menuButton} color="inherit" aria-label="Menu">
                                 <MenuIcon />
                             </IconButton>
-                            <Typography variant="title" color="inherit" className={classes.flex}>
+                            <Typography variant="h6" color="inherit" className={classes.flex}>
                                 Secret Santa
                         </Typography>
                             <Typography variant="button" color="inherit">
@@ -120,6 +121,7 @@ class UserAppBar extends Component {
                     </AppBar>
                 </Slide>
                 <MainDrawer visible={drawer} setDrawer={this.setDrawer} />
+                {/* <div className={classes.toolbar}></div> */}
             </div>
         );
     }

@@ -11,17 +11,17 @@ const styles = theme => ({
   },
   groupCardSurround: {
     [theme.breakpoints.up('xs')]: {
-      minWidth: theme.spacing.unit * 35,
+      minWidth: theme.spacing(35),
     },
     [theme.breakpoints.up('sm')]: {
-      maxWidth: theme.spacing.unit * 70,
+      maxWidth: theme.spacing(70),
       left: '50%'
     },
     [theme.breakpoints.up('md')]: {
-      maxWidth: theme.spacing.unit * 100,
+      maxWidth: theme.spacing(100),
     },
-    padding: theme.spacing.unit * 2,
-    margin: '25px auto 0px auto',
+    padding: theme.spacing(1),
+    margin: '20px auto 0px auto',
   },
 });
 
@@ -50,7 +50,7 @@ class GroupList extends Component {
       let groupList = []
       this.state.groups.forEach((group) => {// Render each group in the array and put it in groupList
         groupList.push(
-          <div className={classes.groupCardSurround}>
+          <div key={group.groupid}className={classes.groupCardSurround}> {/* key is required when rendering a list */}
             <GroupCard group_data={group} firebase={firebase}/>
           </div>
         )

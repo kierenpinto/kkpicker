@@ -5,11 +5,12 @@ import CardActions from '@material-ui/core/CardActions';
 import CardContent from '@material-ui/core/CardContent';
 import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
-import { Zoom, IconButton, TextField } from '@material-ui/core';
+import { Zoom, IconButton, TextField, Grid, CardHeader, Avatar, Dialog, DialogContent } from '@material-ui/core';
 import EditIcon from '@material-ui/icons/Edit';
 import CloseIcon from '@material-ui/icons/Close';
 import SaveIcon from '@material-ui/icons/Save';
-
+import MoreVertIcon from "@material-ui/icons/MoreVert"
+import MuiDialogTitle from '@material-ui/core/DialogTitle';
 
 const styles = theme => ({
     card: {
@@ -27,6 +28,12 @@ const styles = theme => ({
     pos: {
         marginBottom: 12,
     },
+    closeButton: {
+        position: 'absolute',
+        right: theme.spacing(1),
+        top: theme.spacing(1),
+        color: theme.palette.grey[500],
+      },
 });
 
 class GroupCard extends Component {
@@ -34,9 +41,9 @@ class GroupCard extends Component {
         super(props)
         this.submitTitle = this.submitTitle.bind(this);
         this.handleEditTitle = this.handleEditTitle.bind(this);
-        this.toggleEditTitle = this.toggleEditTitle.bind(this);
+        this.toggleEdit = this.toggleEdit.bind(this);
         this.state = {
-            titleEditVisible: false,
+            editVisible: false,
             titleText: this.props.group_data.groupName
         }
     }
@@ -44,13 +51,13 @@ class GroupCard extends Component {
         let renameGroup = this.props.firebase.functions().httpsCallable('renameGroup')
         let name = this.state.titleText
         //alert("GroupID: " + this.props.group_data.groupid + " name: " + name);
-        renameGroup({ groupName: name, groupID: this.props.group_data.groupid }).then( (result) =>{
+        renameGroup({ groupName: name, groupID: this.props.group_data.groupid }).then((result) => {
             //alert('Group Name was changed to ' + name)
-            this.setState({titleEditVisible: false})
+            this.setState({ editVisible: false })
         })
     }
-    toggleEditTitle(event) {
-        this.setState({ titleEditVisible: !this.state.titleEditVisible })
+    toggleEdit(event) {
+        this.setState({ editVisible: !this.state.editVisible })
     }
     handleEditTitle(event) {
         let newText = event.target.value
@@ -58,39 +65,57 @@ class GroupCard extends Component {
     }
     render() {
         const { classes, group_data } = this.props;
-        var title
-        if (this.state.titleEditVisible) {
-            title = (
-                <React.Fragment><TextField value={this.state.titleText} onChange={this.handleEditTitle} />
-                    <IconButton onClick={this.toggleEditTitle}>
-                        <CloseIcon />
-                    </IconButton>
-                    <IconButton onClick={this.submitTitle}>
-                        <SaveIcon/>
-                    </IconButton>
-                </React.Fragment>
-            )
-        } else {
-            title = (<React.Fragment>{group_data.groupName}<IconButton onClick={this.toggleEditTitle}><EditIcon /></IconButton></React.Fragment> )
-        }
         return (
             <Zoom in={true}>
                 <div>
                     <Card className={classes.card}>
 
+                        <Dialog open={this.state.editVisible} onClose={this.toggleEdit}>
+                            <MuiDialogTitle disableTypography>
+                                <Typography variant="h6">
+                                    Rename Group
+                                </Typography>
+                                <IconButton onClick={this.toggleEdit} className={classes.closeButton}>
+                                        <CloseIcon />
+                                </IconButton>
+                            </MuiDialogTitle>
+                            <DialogContent>
+                                <TextField fontSize='large' value={this.state.titleText} onChange={this.handleEditTitle} />
+                                    <IconButton onClick={this.submitTitle}>
+                                        <SaveIcon />
+                                    </IconButton>
+                            </DialogContent>
+                        </Dialog>
+
+                        <CardHeader
+                            avatar={
+                                <Avatar aria-label="Recipe" /* className={classes.avatar} */>
+                                    {group_data.groupName[0]}
+                                </Avatar>
+                            }
+                            action={
+                                <React.Fragment>
+                                    <IconButton onClick={this.toggleEdit}>
+                                        <EditIcon fontSize="small" />
+                                    </IconButton>
+                                    <IconButton aria-label="Settings">
+                                        <MoreVertIcon />
+                                    </IconButton>
+                                </React.Fragment>
+                            }
+                            title={group_data.groupName}
+                            subheader="September 14, 2016"
+                        />
                         <CardContent>
-                            <Typography variant="headline" component="h2">
-                                {title}
-                            </Typography>
+                            <Grid container spacing={2}>
+                            </Grid>
                             <Typography className={classes.pos} color="textSecondary">
-                                Date
-                        </Typography>
-                            <Typography component="p">
                                 You must get a gift for Big Shaq
-                        </Typography>
+                            </Typography>
                         </CardContent>
+
                         <CardActions>
-                            <Button size="small">View</Button>
+                            <Button size="small">Extend</Button>
                         </CardActions>
                     </Card>
                 </div>

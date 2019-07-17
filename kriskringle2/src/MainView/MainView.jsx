@@ -7,7 +7,7 @@ import { Slide } from '@material-ui/core';
 import SignedOut from "./SignedOut";
 const styles = (theme) => ({
     content: {
-        marginTop: 56,
+        marginTop:0,
     }
 });
 class MainView extends Component {
